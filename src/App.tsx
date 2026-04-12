@@ -1,34 +1,66 @@
-// @ts-nocheck
-import { useState, useMemo } from 'react';
+/* eslint-disable @next/next/no-img-element */
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import React, { useState, useMemo } from 'react';
 import { 
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, 
-  PieChart, Pie, Cell, LineChart, Line
+  PieChart, Pie, Cell, LineChart, Line, TooltipProps
 } from 'recharts';
 import { 
   Users, TrendingUp, AlertTriangle, Sparkles, 
-  Building2, Timer, FileText, Activity, Layout, Headset, MousePointer2, 
+  Building2, Timer, FileText, Layout, Headset, MousePointer2, 
   Mail, ArrowLeft, Download, FileDown
 } from 'lucide-react';
 
 /**
  * SONATA CX CAPACITY PLANNER - v4.8 (Titanium Vercel Build)
- * Solução de força bruta para ultrapassar o compilador restrito do Vercel via bypass de tipagem estrita.
+ * Código otimizado e tipado nativamente para passar nas restrições de CI/CD do Vercel.
  */
 
 const CHART_COLORS = ['#4F46E5', '#818CF8', '#C7D2FE', '#312E81', '#6366F1', '#4338CA', '#1E1B4B', '#A5B4FC'];
 const WEEKDAYS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
 
+interface TicketData {
+  id_ticket?: string;
+  data_hora_entrada?: string;
+  client_id?: string;
+  canal?: string;
+  assunto?: string;
+  motivo?: string;
+  isValidDate: boolean;
+  dateObj: Date;
+  yearMonth: string;
+  hour: number;
+  day: number;
+  [key: string]: any;
+}
+
+interface ConfigState {
+  companyMarket: string;
+  teamSize: number | '';
+  shiftHours: number | '';
+  breakMinutes: number | '';
+  phoneAHT: number | '';
+  phoneTMEFirst: number | '';
+  chatAHT: number | '';
+  chatTMEFirst: number | '';
+  chatSLAReopen: number | '';
+  chatConcurrency: number | '';
+  emailAHT: number | '';
+  emailTMEFirst: number | '';
+  emailSLAReopen: number | '';
+}
+
 interface StatsType {
   total: number;
   avgDailyVolLastMonth: number;
   growth: number;
-  monthlyTrend: any[];
+  monthlyTrend: { month: string; volume: number }[];
   globalFCR: number;
-  fcrTrend: any[];
+  fcrTrend: { month: string; rate: number }[];
   hcIdeal: number;
   hcDist: { phone: number; chat: number; email: number };
-  subjectsMap: Record<string, any>;
-  pieSubjects: any[];
+  subjectsMap: Record<string, { total: number; motives: Record<string, number> }>;
+  pieSubjects: { name: string; value: number }[];
   heatmapGrid: number[][];
   maxHeatmapVal: number;
 }
@@ -52,14 +84,14 @@ export default function App() {
   
   const apiKey = "AIzaSyAOsfJ3sH7rKEhAxFJ3f5pWNk4OUaVzZpY"; 
   
-  const [rawData, setRawData] = useState<any[]>([]);
+  const [rawData, setRawData] = useState<TicketData[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
   const [isReportGenerated, setIsReportGenerated] = useState(false);
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [aiReport, setAiReport] = useState("");
   const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
 
-  const [config, setConfig] = useState<any>({
+  const [config, setConfig] = useState<ConfigState>({
     companyMarket: "", 
     teamSize: 50,
     shiftHours: 8, 
@@ -91,12 +123,12 @@ export default function App() {
     document.body.removeChild(link);
   };
 
-  const handleImport = (e: any) => {
+  const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     const reader = new FileReader();
-    reader.onload = (event: any) => {
+    reader.onload = (event) => {
       const text = event.target?.result as string;
       if (!text) return;
       const lines = text.split('\n');
@@ -106,15 +138,15 @@ export default function App() {
       }
 
       const delimiter = lines[0].includes(';') ? ';' : ',';
-      const headers = lines[0].split(delimiter).map((h: string) => h.trim().toLowerCase().replace(/["']/g, ''));
+      const headers = lines[0].split(delimiter).map(h => h.trim().toLowerCase().replace(/["']/g, ''));
       
-      const parsed = lines.slice(1).filter((l: string) => {
+      const parsed = lines.slice(1).filter(l => {
         const cleaned = l.replace(/[;,]/g, '').trim();
         return cleaned !== "";
       }).map((line: string) => {
         const regex = new RegExp(`${delimiter}(?=(?:(?:[^"]*"){2})*[^"]*$)`);
         const values = line.split(regex);
-        const row: Record<string, any> = {};
+        const row: any = {};
         
         headers.forEach((h: string, i: number) => { 
             row[h] = values[i] ? values[i].trim().replace(/^["']|["']$/g, '') : ""; 
@@ -135,8 +167,8 @@ export default function App() {
             row.hour = dt.getHours();
             row.day = dt.getDay();
         }
-        return row;
-      }).filter((r: any) => r.isValidDate); 
+        return row as TicketData;
+      }).filter((r) => r.isValidDate); 
 
       if(parsed.length === 0) {
           alert("Nenhuma linha com data válida encontrada.");
@@ -157,7 +189,7 @@ export default function App() {
     if (!rawData.length) return defaultStats;
 
     const monthMap: Record<string, number> = {};
-    rawData.forEach((d: any) => {
+    rawData.forEach((d) => {
         monthMap[d.yearMonth] = (monthMap[d.yearMonth] || 0) + 1;
     });
     
@@ -171,14 +203,14 @@ export default function App() {
         const firstVol = monthlyTrend[0].volume;
         const lastVol = monthlyTrend[monthlyTrend.length - 1].volume;
         const n = monthlyTrend.length;
-        if(firstVol > 0) growth = Math.pow(lastVol / firstVol, 1 / (n - 1)) - 1;
+        if(firstVol > 0 && n > 1) growth = Math.pow(lastVol / firstVol, 1 / (n - 1)) - 1;
     }
 
     const monthsKeys = Object.keys(monthMap).sort();
     const lastMonthKey = monthsKeys[monthsKeys.length - 1];
     const lastMonthData = rawData.filter(d => d.yearMonth === lastMonthKey);
     
-    const lastMonthChannels = lastMonthData.reduce((acc: Record<string, number>, d: any) => { 
+    const lastMonthChannels = lastMonthData.reduce((acc: Record<string, number>, d) => { 
       const c = d.canal?.toLowerCase() || 'outros';
       acc[c] = (acc[c] || 0) + 1; 
       return acc; 
@@ -204,12 +236,12 @@ export default function App() {
     const hcChat = Math.ceil((wlChatSec / netWorkSec) / 0.82) || 0;
     const hcEmail = Math.ceil((wlEmailSec / netWorkSec) / 0.82) || 0;
 
-    const sorted = [...rawData].sort((a: any, b: any) => a.dateObj.getTime() - b.dateObj.getTime());
-    const clientHistory = new Map();
-    const recontactsByMonth: Record<string, any> = {};
+    const sorted = [...rawData].sort((a, b) => a.dateObj.getTime() - b.dateObj.getTime());
+    const clientHistory = new Map<string, Date>();
+    const recontactsByMonth: Record<string, { total: number; recontacts: number }> = {};
     let totalRecontacts = 0;
 
-    sorted.forEach((t: any) => {
+    sorted.forEach((t) => {
       if (!t.client_id) return;
       
       const key = `${t.client_id}-${t.assunto}`;
@@ -217,7 +249,7 @@ export default function App() {
       recontactsByMonth[t.yearMonth].total++;
 
       if (clientHistory.has(key)) {
-        const diff = (t.dateObj.getTime() - clientHistory.get(key).getTime()) / (1000 * 3600 * 24);
+        const diff = (t.dateObj.getTime() - (clientHistory.get(key)?.getTime() || 0)) / (1000 * 3600 * 24);
         if (diff <= 14) {
             totalRecontacts++;
             recontactsByMonth[t.yearMonth].recontacts++;
@@ -232,8 +264,8 @@ export default function App() {
     }));
     const globalFCR = rawData.length > 0 ? (totalRecontacts / rawData.length) * 100 : 0;
 
-    const subjectsMap: Record<string, any> = {};
-    rawData.forEach((d: any) => {
+    const subjectsMap: Record<string, { total: number; motives: Record<string, number> }> = {};
+    rawData.forEach((d) => {
         const ass = d.assunto || 'Não Classificado';
         const mot = d.motivo || 'Não Classificado';
         if (!subjectsMap[ass]) subjectsMap[ass] = { total: 0, motives: {} };
@@ -245,7 +277,7 @@ export default function App() {
 
     const heatmapGrid = Array(7).fill(null).map(() => Array(24).fill(0));
     let maxHeatmapVal = 0;
-    rawData.forEach((d: any) => {
+    rawData.forEach((d) => {
         heatmapGrid[d.day][d.hour]++;
         if (heatmapGrid[d.day][d.hour] > maxHeatmapVal) maxHeatmapVal = heatmapGrid[d.day][d.hour];
     });
@@ -266,12 +298,11 @@ export default function App() {
     };
   }, [rawData, config]);
 
-  // Escudo universal contra "possibly null" do Vercel
   const s = stats || defaultStats;
 
   const getHcColorConfig = () => {
       if(s.total === 0) return { text: 'text-slate-900', bg: 'bg-slate-100', icon: 'text-slate-500' };
-      const ratio = s.hcIdeal / (config.teamSize || 1);
+      const ratio = s.hcIdeal / (Number(config.teamSize) || 1);
       if (ratio > 1.15) return { text: 'text-rose-500', bg: 'bg-rose-50', icon: 'text-rose-400' }; 
       if (ratio > 1.0) return { text: 'text-amber-500', bg: 'bg-amber-50', icon: 'text-amber-400' }; 
       return { text: 'text-emerald-500', bg: 'bg-emerald-50', icon: 'text-emerald-400' }; 
@@ -339,7 +370,7 @@ export default function App() {
           throw new Error(`[Erro HTTP ${resp.status}] Resposta do Servidor: ${responseText.substring(0, 150)}...`);
       }
 
-      let data;
+      let data: any;
       try {
           data = JSON.parse(responseText);
       } catch (parseError) {
@@ -367,13 +398,13 @@ export default function App() {
     }
   };
 
-  const CustomTooltip = (props: any) => {
+  const CustomTooltip = (props: TooltipProps<number, string>) => {
     const { active, payload, label } = props;
     if (active && payload && payload.length) {
       return (
         <div className="bg-white p-4 rounded-2xl shadow-xl border border-slate-100">
           <p className="font-bold text-slate-800 mb-1">{label}</p>
-          {payload.map((p: any, idx: number) => (
+          {payload.map((p, idx) => (
              <p key={idx} className="text-sm font-semibold" style={{ color: p.color }}>
                {p.name}: {p.value}
              </p>
@@ -424,11 +455,11 @@ export default function App() {
             <div className="grid grid-cols-2 gap-3">
               <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200">
                 <label className="text-[10px] font-bold text-slate-500 uppercase mb-1 block">Equipa Atual</label>
-                <input type="number" className="text-xl font-black w-full bg-transparent outline-none" value={config.teamSize as any} onChange={(e: any) => setConfig({...config, teamSize: e.target.value === '' ? '' : parseInt(e.target.value)})}/>
+                <input type="number" className="text-xl font-black w-full bg-transparent outline-none" value={config.teamSize} onChange={(e) => setConfig({...config, teamSize: e.target.value === '' ? '' : parseInt(e.target.value)})}/>
               </div>
               <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200">
                 <label className="text-[10px] font-bold text-slate-500 uppercase mb-1 block">Carga Horária</label>
-                <select className="text-base font-black w-full bg-transparent outline-none cursor-pointer" value={config.shiftHours as any} onChange={(e: any) => setConfig({...config, shiftHours: parseInt(e.target.value)})}>
+                <select className="text-base font-black w-full bg-transparent outline-none cursor-pointer" value={config.shiftHours} onChange={(e) => setConfig({...config, shiftHours: parseInt(e.target.value)})}>
                    <option value={4}>4h diárias</option>
                    <option value={6}>6h diárias</option>
                    <option value={8}>8h diárias</option>
@@ -437,7 +468,7 @@ export default function App() {
             </div>
             <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 flex justify-between items-center">
               <label className="text-xs font-bold text-slate-600 uppercase">Pausa Total (Min)</label>
-              <input type="number" className="text-right text-lg font-black w-20 bg-transparent outline-none text-indigo-600" value={config.breakMinutes as any} onChange={(e: any) => setConfig({...config, breakMinutes: e.target.value === '' ? '' : parseInt(e.target.value)})}/>
+              <input type="number" className="text-right text-lg font-black w-20 bg-transparent outline-none text-indigo-600" value={config.breakMinutes} onChange={(e) => setConfig({...config, breakMinutes: e.target.value === '' ? '' : parseInt(e.target.value)})}/>
             </div>
           </section>
 
@@ -447,21 +478,21 @@ export default function App() {
              <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
                 <div className="flex items-center gap-2 text-indigo-600 mb-4"><Headset size={18}/> <span className="text-xs font-black uppercase">Voz / Telefone</span></div>
                 <div className="grid grid-cols-2 gap-3">
-                   <div className="bg-slate-50 p-3 rounded-xl"><label className="text-[10px] font-bold text-slate-500 uppercase block mb-1">TMA (Min)</label><input type="number" className="w-full font-black text-base bg-transparent" value={config.phoneAHT as any} onChange={(e: any) => setConfig({...config, phoneAHT: e.target.value === '' ? '' : parseFloat(e.target.value)})}/></div>
-                   <div className="bg-indigo-50 p-3 rounded-xl border border-indigo-100"><label className="text-[10px] font-black text-indigo-600 uppercase block mb-1">TME (Min)</label><input type="number" className="w-full font-black text-base bg-transparent text-indigo-700" value={config.phoneTMEFirst as any} onChange={(e: any) => setConfig({...config, phoneTMEFirst: e.target.value === '' ? '' : parseInt(e.target.value)})}/></div>
+                   <div className="bg-slate-50 p-3 rounded-xl"><label className="text-[10px] font-bold text-slate-500 uppercase block mb-1">TMA (Min)</label><input type="number" className="w-full font-black text-base bg-transparent" value={config.phoneAHT} onChange={(e) => setConfig({...config, phoneAHT: e.target.value === '' ? '' : parseFloat(e.target.value)})}/></div>
+                   <div className="bg-indigo-50 p-3 rounded-xl border border-indigo-100"><label className="text-[10px] font-black text-indigo-600 uppercase block mb-1">TME (Min)</label><input type="number" className="w-full font-black text-base bg-transparent text-indigo-700" value={config.phoneTMEFirst} onChange={(e) => setConfig({...config, phoneTMEFirst: e.target.value === '' ? '' : parseInt(e.target.value)})}/></div>
                 </div>
              </div>
 
              <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
                 <div className="flex items-center gap-2 text-indigo-600 mb-4"><MousePointer2 size={18}/> <span className="text-xs font-black uppercase">Chat / Messaging</span></div>
                 <div className="grid grid-cols-3 gap-2 mb-3">
-                   <div className="bg-slate-50 p-3 rounded-xl text-center"><label className="text-[9px] font-bold text-slate-500 uppercase block mb-1">TMA (m)</label><input type="number" className="w-full font-black text-sm bg-transparent text-center" value={config.chatAHT as any} onChange={(e: any) => setConfig({...config, chatAHT: e.target.value === '' ? '' : parseFloat(e.target.value)})}/></div>
-                   <div className="bg-indigo-50 p-3 rounded-xl text-center border border-indigo-100"><label className="text-[9px] font-black text-indigo-600 uppercase block mb-1">TME (m)</label><input type="number" className="w-full font-black text-sm bg-transparent text-center text-indigo-700" value={config.chatTMEFirst as any} onChange={(e: any) => setConfig({...config, chatTMEFirst: e.target.value === '' ? '' : parseInt(e.target.value)})}/></div>
-                   <div className="bg-indigo-50 p-3 rounded-xl text-center border border-indigo-100"><label className="text-[9px] font-black text-indigo-600 uppercase block mb-1">Reab (m)</label><input type="number" className="w-full font-black text-sm bg-transparent text-center text-indigo-700" value={config.chatSLAReopen as any} onChange={(e: any) => setConfig({...config, chatSLAReopen: e.target.value === '' ? '' : parseInt(e.target.value)})}/></div>
+                   <div className="bg-slate-50 p-3 rounded-xl text-center"><label className="text-[9px] font-bold text-slate-500 uppercase block mb-1">TMA (m)</label><input type="number" className="w-full font-black text-sm bg-transparent text-center" value={config.chatAHT} onChange={(e) => setConfig({...config, chatAHT: e.target.value === '' ? '' : parseFloat(e.target.value)})}/></div>
+                   <div className="bg-indigo-50 p-3 rounded-xl text-center border border-indigo-100"><label className="text-[9px] font-black text-indigo-600 uppercase block mb-1">TME (m)</label><input type="number" className="w-full font-black text-sm bg-transparent text-center text-indigo-700" value={config.chatTMEFirst} onChange={(e) => setConfig({...config, chatTMEFirst: e.target.value === '' ? '' : parseInt(e.target.value)})}/></div>
+                   <div className="bg-indigo-50 p-3 rounded-xl text-center border border-indigo-100"><label className="text-[9px] font-black text-indigo-600 uppercase block mb-1">Reab (m)</label><input type="number" className="w-full font-black text-sm bg-transparent text-center text-indigo-700" value={config.chatSLAReopen} onChange={(e) => setConfig({...config, chatSLAReopen: e.target.value === '' ? '' : parseInt(e.target.value)})}/></div>
                 </div>
                 <div className="bg-slate-50 p-3 rounded-xl flex justify-between items-center">
                    <label className="text-[10px] font-bold text-slate-600 uppercase">Simultaneidade</label>
-                   <select className="bg-transparent font-black text-sm outline-none text-indigo-600 text-right" value={config.chatConcurrency as any} onChange={(e: any) => setConfig({...config, chatConcurrency: parseInt(e.target.value)})}>
+                   <select className="bg-transparent font-black text-sm outline-none text-indigo-600 text-right" value={config.chatConcurrency} onChange={(e) => setConfig({...config, chatConcurrency: parseInt(e.target.value)})}>
                       {[1,2,3,4,5,6,7,8].map(n => <option key={n} value={n}>{n}x</option>)}
                    </select>
                 </div>
@@ -470,9 +501,9 @@ export default function App() {
              <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
                 <div className="flex items-center gap-2 text-indigo-600 mb-4"><Mail size={18}/> <span className="text-xs font-black uppercase">E-mail / Tickets</span></div>
                 <div className="grid grid-cols-3 gap-2">
-                   <div className="bg-slate-50 p-3 rounded-xl text-center"><label className="text-[9px] font-bold text-slate-500 uppercase block mb-1">TMA (h)</label><input type="number" className="w-full font-black text-sm bg-transparent text-center" value={config.emailAHT as any} onChange={(e: any) => setConfig({...config, emailAHT: e.target.value === '' ? '' : parseFloat(e.target.value)})}/></div>
-                   <div className="bg-indigo-50 p-3 rounded-xl text-center border border-indigo-100"><label className="text-[9px] font-black text-indigo-600 uppercase block mb-1">TME (h)</label><input type="number" className="w-full font-black text-sm bg-transparent text-center text-indigo-700" value={config.emailTMEFirst as any} onChange={(e: any) => setConfig({...config, emailTMEFirst: e.target.value === '' ? '' : parseInt(e.target.value)})}/></div>
-                   <div className="bg-indigo-50 p-3 rounded-xl text-center border border-indigo-100"><label className="text-[9px] font-black text-indigo-600 uppercase block mb-1">Reab (h)</label><input type="number" className="w-full font-black text-sm bg-transparent text-center text-indigo-700" value={config.emailSLAReopen as any} onChange={(e: any) => setConfig({...config, emailSLAReopen: e.target.value === '' ? '' : parseInt(e.target.value)})}/></div>
+                   <div className="bg-slate-50 p-3 rounded-xl text-center"><label className="text-[9px] font-bold text-slate-500 uppercase block mb-1">TMA (h)</label><input type="number" className="w-full font-black text-sm bg-transparent text-center" value={config.emailAHT} onChange={(e) => setConfig({...config, emailAHT: e.target.value === '' ? '' : parseFloat(e.target.value)})}/></div>
+                   <div className="bg-indigo-50 p-3 rounded-xl text-center border border-indigo-100"><label className="text-[9px] font-black text-indigo-600 uppercase block mb-1">TME (h)</label><input type="number" className="w-full font-black text-sm bg-transparent text-center text-indigo-700" value={config.emailTMEFirst} onChange={(e) => setConfig({...config, emailTMEFirst: e.target.value === '' ? '' : parseInt(e.target.value)})}/></div>
+                   <div className="bg-indigo-50 p-3 rounded-xl text-center border border-indigo-100"><label className="text-[9px] font-black text-indigo-600 uppercase block mb-1">Reab (h)</label><input type="number" className="w-full font-black text-sm bg-transparent text-center text-indigo-700" value={config.emailSLAReopen} onChange={(e) => setConfig({...config, emailSLAReopen: e.target.value === '' ? '' : parseInt(e.target.value)})}/></div>
                 </div>
              </div>
           </section>
@@ -616,7 +647,7 @@ export default function App() {
                             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9"/>
                             <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{fontSize: 12, fill: '#64748b'}} />
                             <YAxis axisLine={false} tickLine={false} tick={{fontSize: 12, fill: '#64748b'}} />
-                            <RechartsTooltip content={CustomTooltip as any} cursor={{ stroke: '#cbd5e1', strokeWidth: 1, strokeDasharray: '4 4' }} />
+                            <RechartsTooltip content={CustomTooltip} cursor={{ stroke: '#cbd5e1', strokeWidth: 1, strokeDasharray: '4 4' }} />
                             <Area type="monotone" dataKey="volume" name="Tickets" stroke="#4F46E5" strokeWidth={3} fillOpacity={1} fill="url(#colorVol)" />
                         </AreaChart>
                     </ResponsiveContainer>
@@ -631,7 +662,7 @@ export default function App() {
                             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9"/>
                             <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{fontSize: 12, fill: '#64748b'}} />
                             <YAxis axisLine={false} tickLine={false} tick={{fontSize: 12, fill: '#64748b'}} tickFormatter={(v) => `${v}%`} />
-                            <RechartsTooltip content={CustomTooltip as any} cursor={{ stroke: '#cbd5e1', strokeWidth: 1, strokeDasharray: '4 4' }} />
+                            <RechartsTooltip content={CustomTooltip} cursor={{ stroke: '#cbd5e1', strokeWidth: 1, strokeDasharray: '4 4' }} />
                             <Line type="monotone" dataKey="rate" name="Recontato (%)" stroke="#334155" strokeWidth={3} dot={{r: 4, fill: '#334155', strokeWidth: 2, stroke: '#fff'}} />
                         </LineChart>
                     </ResponsiveContainer>
@@ -671,7 +702,7 @@ export default function App() {
                                     <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} className="hover:opacity-80 transition-opacity" />
                                 ))}
                             </Pie>
-                            <RechartsTooltip content={CustomTooltip as any} />
+                            <RechartsTooltip content={CustomTooltip} />
                         </PieChart>
                     </ResponsiveContainer>
                 </div>
@@ -716,7 +747,7 @@ export default function App() {
                           <div className="w-4 h-4 rounded-sm bg-[#f1f5f9]"></div>
                           <span className="mx-2">|</span>
                           Frio
-                          <div className="w-32 h-3 rounded-full" style={{ background: 'linear-cast(to right, hsl(200, 90%, 60%), hsl(120, 90%, 60%), hsl(60, 90%, 60%), hsl(0, 90%, 60%))', backgroundImage: 'linear-gradient(to right, #3b82f6, #22c55e, #eab308, #ef4444)' }}></div>
+                          <div className="w-32 h-3 rounded-full" style={{ background: 'linear-gradient(to right, #3b82f6, #22c55e, #eab308, #ef4444)' }}></div>
                           Quente
                       </div>
                   </div>
