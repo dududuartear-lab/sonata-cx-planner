@@ -351,7 +351,7 @@ export default function App() {
     `;
 
     try {
-      const url = `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+      const url = `https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash-exp:generateContent?key=${apiKey}`;
       
       const resp = await fetch(url, {
         method: 'POST',
