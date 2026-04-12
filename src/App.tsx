@@ -82,7 +82,7 @@ const defaultStats: StatsType = {
 
 export default function App() {
   
-const apiKey = import.meta.env.VITE_SONATA_API; 
+const apikey = import.meta.env.VITE_SONATA_API;
   
   const [rawData, setRawData] = useState<TicketData[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
