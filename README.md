@@ -4,7 +4,7 @@
 
 **To see the dashboard in action, check out the live link below:**
 
-Live Demo: (Add your Vercel link here, e.g., https://www.google.com/search?q=https://sonata-cx-planner.vercel.app)
+Live Demo: https://sonata-cx-planner.vercel.app/
 
 Test Data: Use the input_tickets_sample.csv spreadsheet provided in this repository to interact with the Dashboard.
 
