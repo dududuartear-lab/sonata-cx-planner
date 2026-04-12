@@ -10,12 +10,44 @@ import {
 } from 'lucide-react';
 
 /**
- * SONATA CX CAPACITY PLANNER - v4.6 (Strict Vercel Build Fix)
- * Correção estrita de tipagem TypeScript e Optional Chaining para deployment em produção (Vercel).
+ * SONATA CX CAPACITY PLANNER - v4.7 (Strict Vercel Build Fix)
+ * Tipagem estrita de TypeScript para garantir o Deployment com sucesso no Vercel.
  */
 
 const CHART_COLORS = ['#4F46E5', '#818CF8', '#C7D2FE', '#312E81', '#6366F1', '#4338CA', '#1E1B4B', '#A5B4FC'];
 const WEEKDAYS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+
+// 1. Tipagem Estrita (O segredo para o Vercel aprovar o código)
+interface StatsType {
+  total: number;
+  avgDailyVolLastMonth: number;
+  growth: number;
+  monthlyTrend: any[];
+  globalFCR: number;
+  fcrTrend: any[];
+  hcIdeal: number;
+  hcDist: { phone: number; chat: number; email: number };
+  subjectsMap: any;
+  pieSubjects: any[];
+  heatmapGrid: number[][];
+  maxHeatmapVal: number;
+}
+
+// 2. Estado por defeito (Garante que nunca há um valor 'null' a quebrar o ecrã)
+const defaultStats: StatsType = {
+  total: 0,
+  avgDailyVolLastMonth: 0,
+  growth: 0,
+  monthlyTrend: [],
+  globalFCR: 0,
+  fcrTrend: [],
+  hcIdeal: 0,
+  hcDist: { phone: 0, chat: 0, email: 0 },
+  subjectsMap: {},
+  pieSubjects: [],
+  heatmapGrid: Array(7).fill(null).map(() => Array(24).fill(0)),
+  maxHeatmapVal: 0
+};
 
 export default function App() {
   
@@ -121,8 +153,8 @@ export default function App() {
     e.target.value = ''; 
   };
 
-  const stats = useMemo(() => {
-    if (!rawData.length) return null;
+  const stats = useMemo<StatsType>(() => {
+    if (!rawData.length) return defaultStats;
 
     const monthMap: any = {};
     rawData.forEach(d => {
@@ -235,8 +267,8 @@ export default function App() {
   }, [rawData, config]);
 
   const getHcColorConfig = () => {
-      if(!stats) return { text: 'text-slate-900', bg: 'bg-slate-100', icon: 'text-slate-500' };
-      const ratio = (stats?.hcIdeal || 0) / (config.teamSize || 1);
+      if(stats.total === 0) return { text: 'text-slate-900', bg: 'bg-slate-100', icon: 'text-slate-500' };
+      const ratio = stats.hcIdeal / (config.teamSize || 1);
       if (ratio > 1.15) return { text: 'text-rose-500', bg: 'bg-rose-50', icon: 'text-rose-400' }; 
       if (ratio > 1.0) return { text: 'text-amber-500', bg: 'bg-amber-50', icon: 'text-amber-400' }; 
       return { text: 'text-emerald-500', bg: 'bg-emerald-50', icon: 'text-emerald-400' }; 
@@ -247,9 +279,9 @@ export default function App() {
   };
 
   const currentPieData = useMemo(() => {
-      if (!stats) return [];
-      if (!selectedSubject) return stats?.pieSubjects || [];
-      const motives = stats?.subjectsMap?.[selectedSubject]?.motives || {};
+      if (stats.total === 0) return [];
+      if (!selectedSubject) return stats.pieSubjects || [];
+      const motives = stats.subjectsMap[selectedSubject]?.motives || {};
       return Object.keys(motives).map(k => ({ name: k, value: motives[k] })).sort((a,b) => b.value - a.value);
   }, [stats, selectedSubject]);
 
@@ -273,9 +305,9 @@ export default function App() {
     DADOS:
     - Mercado: ${config.companyMarket}
     - Headcount Atual: ${config.teamSize} analistas.
-    - Headcount Ideal Projetado (Mês Recente): ${stats?.hcIdeal || 0} analistas.
-    - Crescimento Mensal Médio: ${((stats?.growth || 0) * 100).toFixed(1)}%
-    - Taxa de Recontato (14 dias): ${(stats?.globalFCR || 0).toFixed(1)}%
+    - Headcount Ideal Projetado (Mês Recente): ${stats.hcIdeal} analistas.
+    - Crescimento Mensal Médio: ${(stats.growth * 100).toFixed(1)}%
+    - Taxa de Recontato (14 dias): ${(stats.globalFCR).toFixed(1)}%
 
     REGRAS:
     1. Baseie-se nas médias históricas apontadas.
@@ -331,8 +363,8 @@ export default function App() {
     }
   };
 
-  const CustomTooltip = (props: any) => {
-    const { active, payload, label } = props;
+  // 3. Tipagem Opcional no Componente para apaziguar o Vercel (Erro TS2739 corrigido)
+  const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: any[]; label?: string }) => {
     if (active && payload && payload.length) {
       return (
         <div className="bg-white p-4 rounded-2xl shadow-xl border border-slate-100">
@@ -365,7 +397,7 @@ export default function App() {
              <img src="/logo-branca.png" alt="Sonata CX Logo" className="w-8 h-8 object-contain" />
           </div>
           <h1 className="text-2xl font-black text-slate-900 tracking-tight">sonata.cx <span className="text-indigo-600 italic">lab</span></h1>
-          <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Capacity Planner v4.6</p>
+          <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Capacity Planner v4.7</p>
         </div>
 
         <div className="space-y-8 flex-1">
@@ -384,10 +416,10 @@ export default function App() {
           </section>
 
           <section className="space-y-4">
-            <h3 className="text-sm font-black text-slate-600 uppercase tracking-widest flex items-center gap-2"><Users size={16}/> Time e Jornada</h3>
+            <h3 className="text-sm font-black text-slate-600 uppercase tracking-widest flex items-center gap-2"><Users size={16}/> Equipa e Jornada</h3>
             <div className="grid grid-cols-2 gap-3">
               <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200">
-                <label className="text-[10px] font-bold text-slate-500 uppercase mb-1 block">Time Atual</label>
+                <label className="text-[10px] font-bold text-slate-500 uppercase mb-1 block">Equipa Atual</label>
                 <input type="number" className="text-xl font-black w-full bg-transparent outline-none" value={config.teamSize} onChange={(e) => setConfig({...config, teamSize: e.target.value === '' ? '' : parseInt(e.target.value)})}/>
               </div>
               <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200">
@@ -448,7 +480,7 @@ export default function App() {
               disabled={!isLoaded || !config.companyMarket}
               className="w-full bg-slate-900 hover:bg-indigo-600 text-white py-4 rounded-2xl font-black shadow-lg transition-all disabled:bg-slate-200 disabled:text-slate-400 flex items-center justify-center gap-2 active:scale-95"
             >
-              {isAiLoading ? "Analisando..." : <><Layout size={18}/> Gerar Relatório Estratégico</>}
+              {isAiLoading ? "A Analisar..." : <><Layout size={18}/> Gerar Relatório Estratégico</>}
             </button>
         </div>
       </aside>
@@ -477,7 +509,7 @@ export default function App() {
                      title="Clique para importar"
                    />
                    <div className="bg-indigo-600 text-white px-10 py-5 rounded-full font-black text-xl shadow-xl shadow-indigo-200 flex items-center justify-center gap-3 cursor-pointer">
-                     <FileText size={24} /> Importar Base CSV
+                     <FileText size={24} /> Importar Ficheiro CSV
                    </div>
                  </div>
                  
@@ -485,7 +517,7 @@ export default function App() {
                    onClick={handleDownloadTemplate}
                    className="flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-indigo-600 transition-colors underline underline-offset-4"
                  >
-                   <FileDown size={16} /> Baixar Planilha de Exemplo (Template)
+                   <FileDown size={16} /> Descarregar Planilha de Exemplo (Template)
                  </button>
              </div>
 
@@ -493,12 +525,12 @@ export default function App() {
                 <div className="flex items-start gap-3">
                   <AlertTriangle className="text-red-500 shrink-0 mt-1" size={24} />
                   <div>
-                    <h4 className="text-red-800 font-bold text-sm uppercase tracking-wider mb-2">Aviso de Segurança (LGPD)</h4>
+                    <h4 className="text-red-800 font-bold text-sm uppercase tracking-wider mb-2">Aviso de Segurança (LGPD/RGPD)</h4>
                     <p className="text-red-700 text-xs leading-relaxed mb-2">
-                      <strong>Não faça upload de informações sensíveis ou dados reais de clientes.</strong> Recomendamos fortemente mascarar ou anonimizar a coluna <code className="bg-red-100 px-1 py-0.5 rounded font-mono">client_id</code>. Não utilize E-mails, CPFs ou Nomes reais em nenhuma hipótese.
+                      <strong>Não faça upload de informações sensíveis ou dados reais de clientes.</strong> Recomendamos vivamente mascarar ou anonimizar a coluna <code className="bg-red-100 px-1 py-0.5 rounded font-mono">client_id</code>. Não utilize E-mails, CPFs ou Nomes reais em nenhuma hipótese.
                     </p>
                     <p className="text-red-700 text-xs leading-relaxed opacity-90">
-                      Os seus dados brutos são processados 100% localmente no seu navegador e não ficam armazenados. Contudo, os resultados numéricos (KPIs consolidados) são enviados como prompt para a IA (Google Gemini) formatar o parecer, e essa requisição de rede não deve conter dados pessoais identificáveis (PII).
+                      Os seus dados brutos são processados 100% localmente no seu navegador e não ficam registados. Contudo, os resultados numéricos (KPIs consolidados) são enviados como prompt para a IA (Google Gemini) formatar o parecer, e este pedido de rede não deve conter dados pessoais identificáveis (PII).
                     </p>
                   </div>
                 </div>
@@ -510,9 +542,9 @@ export default function App() {
               <div className="w-20 h-20 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mb-6">
                  <FileText size={32}/>
               </div>
-              <h3 className="text-2xl font-black text-slate-900 mb-2">Base Importada com Sucesso!</h3>
+              <h3 className="text-2xl font-black text-slate-900 mb-2">Ficheiro Importado com Sucesso!</h3>
               <p className="text-slate-500 mb-8 text-lg">
-                 O ficheiro possui <strong>{stats?.total?.toLocaleString()}</strong> contatos válidos.<br/><br/>
+                 O ficheiro possui <strong>{stats.total.toLocaleString()}</strong> contactos válidos.<br/><br/>
                  Para visualizar o dashboard, preencha o campo <strong>Mercado da Empresa</strong> na barra lateral e clique em <strong>Gerar Relatório Estratégico</strong>.
               </p>
           </div>
@@ -529,37 +561,37 @@ export default function App() {
                       </div>
                       <span className="bg-slate-100 text-slate-500 text-[10px] font-bold px-2 py-1 rounded">vs {config.teamSize}</span>
                   </div>
-                  <div className={`text-5xl font-black mb-1 ${hcColors.text}`}>{stats?.hcIdeal || 0}</div>
-                  <div className="text-[11px] text-slate-500 font-medium">Vol Diário Ref: {stats?.avgDailyVolLastMonth || 0} tickets</div>
+                  <div className={`text-5xl font-black mb-1 ${hcColors.text}`}>{stats.hcIdeal}</div>
+                  <div className="text-[11px] text-slate-500 font-medium">Vol Diário Ref: {stats.avgDailyVolLastMonth} tickets</div>
               </div>
 
               <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm relative overflow-hidden group">
                   <div className="absolute -right-4 -top-4 w-24 h-24 bg-slate-50 rounded-full group-hover:scale-150 transition-transform duration-500 -z-10"></div>
                   <div className="text-slate-400 text-[10px] font-black uppercase tracking-widest flex items-center gap-1 mb-4"><TrendingUp size={14}/> Crescimento (MoM)</div>
-                  <div className="text-5xl font-black text-slate-900 mb-1">{((stats?.growth || 0) * 100).toFixed(1)}%</div>
+                  <div className="text-5xl font-black text-slate-900 mb-1">{(stats.growth * 100).toFixed(1)}%</div>
                   <div className="text-[11px] text-slate-500 font-medium">Taxa composta mensal</div>
               </div>
 
               <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm relative overflow-hidden group">
                   <div className="absolute -right-4 -top-4 w-24 h-24 bg-slate-50 rounded-full group-hover:scale-150 transition-transform duration-500 -z-10"></div>
                   <div className="text-slate-400 text-[10px] font-black uppercase tracking-widest flex items-center gap-1 mb-4"><AlertTriangle size={14}/> Taxa de Recontato</div>
-                  <div className="text-5xl font-black text-slate-900 mb-1">{(stats?.globalFCR || 0).toFixed(1)}%</div>
+                  <div className="text-5xl font-black text-slate-900 mb-1">{stats.globalFCR.toFixed(1)}%</div>
                   <div className="text-[11px] text-slate-500 font-medium">Janela de 14 dias p/ cliente</div>
               </div>
 
               <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm bg-slate-900 text-white">
-                  <div className="text-slate-400 text-[10px] font-black uppercase tracking-widest flex items-center gap-1 mb-4"><Layout size={14}/> Equipe Necessária</div>
+                  <div className="text-slate-400 text-[10px] font-black uppercase tracking-widest flex items-center gap-1 mb-4"><Layout size={14}/> Equipa Necessária</div>
                   <div className="flex justify-between items-end">
                       <div className="text-center">
-                          <div className="text-2xl font-black text-white">{stats?.hcDist?.phone || 0}</div>
+                          <div className="text-2xl font-black text-white">{stats.hcDist.phone}</div>
                           <div className="text-[9px] uppercase tracking-wider text-slate-500 mt-1"><Headset size={10} className="mx-auto mb-1"/>Voz</div>
                       </div>
                       <div className="text-center border-l border-r border-slate-700 px-4">
-                          <div className="text-2xl font-black text-white">{stats?.hcDist?.chat || 0}</div>
+                          <div className="text-2xl font-black text-white">{stats.hcDist.chat}</div>
                           <div className="text-[9px] uppercase tracking-wider text-slate-500 mt-1"><MousePointer2 size={10} className="mx-auto mb-1"/>Chat</div>
                       </div>
                       <div className="text-center">
-                          <div className="text-2xl font-black text-white">{stats?.hcDist?.email || 0}</div>
+                          <div className="text-2xl font-black text-white">{stats.hcDist.email}</div>
                           <div className="text-[9px] uppercase tracking-wider text-slate-500 mt-1"><Mail size={10} className="mx-auto mb-1"/>Email</div>
                       </div>
                   </div>
@@ -570,7 +602,7 @@ export default function App() {
                 <h3 className="text-lg font-black text-slate-800 mb-6 flex items-center gap-2">Evolução do Volume <span className="text-xs font-normal text-slate-400 bg-slate-100 px-2 py-0.5 rounded">Mês a Mês</span></h3>
                 <div className="flex-1 min-h-0">
                     <ResponsiveContainer width="100%" height="100%">
-                        <AreaChart data={stats?.monthlyTrend || []} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                        <AreaChart data={stats.monthlyTrend} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                             <defs>
                                 <linearGradient id="colorVol" x1="0" y1="0" x2="0" y2="1">
                                 <stop offset="5%" stopColor="#4F46E5" stopOpacity={0.3}/>
@@ -580,7 +612,7 @@ export default function App() {
                             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9"/>
                             <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{fontSize: 12, fill: '#64748b'}} />
                             <YAxis axisLine={false} tickLine={false} tick={{fontSize: 12, fill: '#64748b'}} />
-                            <RechartsTooltip content={(props: any) => <CustomTooltip {...props} />} cursor={{ stroke: '#cbd5e1', strokeWidth: 1, strokeDasharray: '4 4' }} />
+                            <RechartsTooltip content={<CustomTooltip />} cursor={{ stroke: '#cbd5e1', strokeWidth: 1, strokeDasharray: '4 4' }} />
                             <Area type="monotone" dataKey="volume" name="Tickets" stroke="#4F46E5" strokeWidth={3} fillOpacity={1} fill="url(#colorVol)" />
                         </AreaChart>
                     </ResponsiveContainer>
@@ -591,11 +623,11 @@ export default function App() {
                 <h3 className="text-lg font-black text-slate-800 mb-6 flex items-center gap-2">Taxa de Recontato (FCR) <span className="text-xs font-normal text-slate-400 bg-slate-100 px-2 py-0.5 rounded">% Mensal</span></h3>
                 <div className="flex-1 min-h-0">
                     <ResponsiveContainer width="100%" height="100%">
-                        <LineChart data={stats?.fcrTrend || []} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                        <LineChart data={stats.fcrTrend} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9"/>
                             <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{fontSize: 12, fill: '#64748b'}} />
                             <YAxis axisLine={false} tickLine={false} tick={{fontSize: 12, fill: '#64748b'}} tickFormatter={(v) => `${v}%`} />
-                            <RechartsTooltip content={(props: any) => <CustomTooltip {...props} />} cursor={{ stroke: '#cbd5e1', strokeWidth: 1, strokeDasharray: '4 4' }} />
+                            <RechartsTooltip content={<CustomTooltip />} cursor={{ stroke: '#cbd5e1', strokeWidth: 1, strokeDasharray: '4 4' }} />
                             <Line type="monotone" dataKey="rate" name="Recontato (%)" stroke="#334155" strokeWidth={3} dot={{r: 4, fill: '#334155', strokeWidth: 2, stroke: '#fff'}} />
                         </LineChart>
                     </ResponsiveContainer>
@@ -635,7 +667,7 @@ export default function App() {
                                     <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} className="hover:opacity-80 transition-opacity" />
                                 ))}
                             </Pie>
-                            <RechartsTooltip content={(props: any) => <CustomTooltip {...props} />} />
+                            <RechartsTooltip content={<CustomTooltip />} />
                         </PieChart>
                     </ResponsiveContainer>
                 </div>
@@ -659,14 +691,14 @@ export default function App() {
                               <div key={day} className="flex items-center h-8">
                                   <div className="w-12 text-[10px] font-black text-slate-600 uppercase text-right pr-3">{day}</div>
                                   <div className="flex flex-1 gap-1 h-full">
-                                      {stats?.heatmapGrid?.[dIdx]?.map((val: number, hIdx: number) => (
+                                      {stats.heatmapGrid[dIdx].map((val: number, hIdx: number) => (
                                           <div 
                                             key={hIdx} 
                                             className="flex-1 rounded-sm relative group cursor-crosshair transition-all hover:ring-2 hover:ring-slate-900 hover:z-10"
-                                            style={{ backgroundColor: getHeatmapColor(val, stats?.maxHeatmapVal || 0) }}
+                                            style={{ backgroundColor: getHeatmapColor(val, stats.maxHeatmapVal) }}
                                           >
                                             <div className="absolute opacity-0 group-hover:opacity-100 bottom-full left-1/2 -translate-x-1/2 mb-2 bg-slate-900 text-white text-[10px] font-bold py-1 px-2 rounded whitespace-nowrap pointer-events-none z-50">
-                                                {day}, {hIdx}h: {val} contatos
+                                                {day}, {hIdx}h: {val} contactos
                                             </div>
                                           </div>
                                       ))}
@@ -705,7 +737,7 @@ export default function App() {
                     {isAiLoading ? (
                         <div className="py-20 flex flex-col items-center justify-center text-indigo-300">
                             <div className="w-12 h-12 border-4 border-indigo-500/30 border-t-indigo-400 rounded-full animate-spin mb-4"></div>
-                            <p className="text-sm font-bold tracking-widest uppercase animate-pulse">A analisar dados e a gerar parecer estratégico...</p>
+                            <p className="text-sm font-bold tracking-widest uppercase animate-pulse">A analisar dados e a criar ponto de situação...</p>
                         </div>
                     ) : aiReport ? (
                         <div className="prose prose-invert prose-indigo max-w-none text-slate-300">
