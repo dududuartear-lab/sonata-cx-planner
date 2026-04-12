@@ -10,8 +10,8 @@ import {
 } from 'lucide-react';
 
 /**
- * SONATA CX CAPACITY PLANNER - v4.5 (TS Build Fix)
- * Correção estrita de tipagem TypeScript para deployment em produção (Vercel).
+ * SONATA CX CAPACITY PLANNER - v4.6 (Strict Vercel Build Fix)
+ * Correção estrita de tipagem TypeScript e Optional Chaining para deployment em produção (Vercel).
  */
 
 const CHART_COLORS = ['#4F46E5', '#818CF8', '#C7D2FE', '#312E81', '#6366F1', '#4338CA', '#1E1B4B', '#A5B4FC'];
@@ -61,7 +61,7 @@ export default function App() {
   };
 
   const handleImport = (e: any) => {
-    const file = e.target.files[0];
+    const file = e.target.files?.[0];
     if (!file) return;
 
     const reader = new FileReader();
@@ -118,7 +118,7 @@ export default function App() {
       setAiReport("");
     };
     reader.readAsText(file);
-    e.target.value = null; 
+    e.target.value = ''; 
   };
 
   const stats = useMemo(() => {
@@ -236,7 +236,7 @@ export default function App() {
 
   const getHcColorConfig = () => {
       if(!stats) return { text: 'text-slate-900', bg: 'bg-slate-100', icon: 'text-slate-500' };
-      const ratio = stats.hcIdeal / (config.teamSize || 1);
+      const ratio = (stats?.hcIdeal || 0) / (config.teamSize || 1);
       if (ratio > 1.15) return { text: 'text-rose-500', bg: 'bg-rose-50', icon: 'text-rose-400' }; 
       if (ratio > 1.0) return { text: 'text-amber-500', bg: 'bg-amber-50', icon: 'text-amber-400' }; 
       return { text: 'text-emerald-500', bg: 'bg-emerald-50', icon: 'text-emerald-400' }; 
@@ -248,8 +248,8 @@ export default function App() {
 
   const currentPieData = useMemo(() => {
       if (!stats) return [];
-      if (!selectedSubject) return stats.pieSubjects;
-      const motives = stats.subjectsMap[selectedSubject].motives;
+      if (!selectedSubject) return stats?.pieSubjects || [];
+      const motives = stats?.subjectsMap?.[selectedSubject]?.motives || {};
       return Object.keys(motives).map(k => ({ name: k, value: motives[k] })).sort((a,b) => b.value - a.value);
   }, [stats, selectedSubject]);
 
@@ -331,7 +331,8 @@ export default function App() {
     }
   };
 
-  const CustomTooltip = ({ active, payload, label }: any) => {
+  const CustomTooltip = (props: any) => {
+    const { active, payload, label } = props;
     if (active && payload && payload.length) {
       return (
         <div className="bg-white p-4 rounded-2xl shadow-xl border border-slate-100">
@@ -347,7 +348,8 @@ export default function App() {
     return null;
   };
 
-  const renderPieLabel = ({ name, percent }: any) => {
+  const renderPieLabel = (props: any) => {
+      const { name, percent } = props;
       if(percent < 0.05) return null; 
       return `${name} (${(percent * 100).toFixed(0)}%)`;
   };
@@ -363,7 +365,7 @@ export default function App() {
              <img src="/logo-branca.png" alt="Sonata CX Logo" className="w-8 h-8 object-contain" />
           </div>
           <h1 className="text-2xl font-black text-slate-900 tracking-tight">sonata.cx <span className="text-indigo-600 italic">lab</span></h1>
-          <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Capacity Planner v4.5</p>
+          <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Capacity Planner v4.6</p>
         </div>
 
         <div className="space-y-8 flex-1">
