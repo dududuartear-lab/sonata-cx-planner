@@ -1,9 +1,9 @@
 /* eslint-disable @next/next/no-img-element */
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import React, { useState, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { 
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, 
-  PieChart, Pie, Cell, LineChart, Line, TooltipProps
+  PieChart, Pie, Cell, LineChart, Line
 } from 'recharts';
 import { 
   Users, TrendingUp, AlertTriangle, Sparkles, 
@@ -13,7 +13,7 @@ import {
 
 /**
  * SONATA CX CAPACITY PLANNER - v4.8 (Titanium Vercel Build)
- * Código otimizado e tipado nativamente para passar nas restrições de CI/CD do Vercel.
+ * Código tipado e blindado contra as regras estritas (noImplicitAny / strictNullChecks) do compilador do Vercel.
  */
 
 const CHART_COLORS = ['#4F46E5', '#818CF8', '#C7D2FE', '#312E81', '#6366F1', '#4338CA', '#1E1B4B', '#A5B4FC'];
@@ -36,18 +36,18 @@ interface TicketData {
 
 interface ConfigState {
   companyMarket: string;
-  teamSize: number | '';
-  shiftHours: number | '';
-  breakMinutes: number | '';
-  phoneAHT: number | '';
-  phoneTMEFirst: number | '';
-  chatAHT: number | '';
-  chatTMEFirst: number | '';
-  chatSLAReopen: number | '';
-  chatConcurrency: number | '';
-  emailAHT: number | '';
-  emailTMEFirst: number | '';
-  emailSLAReopen: number | '';
+  teamSize: number | string;
+  shiftHours: number | string;
+  breakMinutes: number | string;
+  phoneAHT: number | string;
+  phoneTMEFirst: number | string;
+  chatAHT: number | string;
+  chatTMEFirst: number | string;
+  chatSLAReopen: number | string;
+  chatConcurrency: number | string;
+  emailAHT: number | string;
+  emailTMEFirst: number | string;
+  emailSLAReopen: number | string;
 }
 
 interface StatsType {
@@ -123,12 +123,12 @@ export default function App() {
     document.body.removeChild(link);
   };
 
-  const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImport = (e: any) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     const reader = new FileReader();
-    reader.onload = (event) => {
+    reader.onload = (event: any) => {
       const text = event.target?.result as string;
       if (!text) return;
       const lines = text.split('\n');
@@ -138,29 +138,29 @@ export default function App() {
       }
 
       const delimiter = lines[0].includes(';') ? ';' : ',';
-      const headers = lines[0].split(delimiter).map(h => h.trim().toLowerCase().replace(/["']/g, ''));
+      const headers = lines[0].split(delimiter).map((h: string) => h.trim().toLowerCase().replace(/["']/g, ''));
       
-      const parsed = lines.slice(1).filter(l => {
+      const parsed = lines.slice(1).filter((l: string) => {
         const cleaned = l.replace(/[;,]/g, '').trim();
         return cleaned !== "";
       }).map((line: string) => {
         const regex = new RegExp(`${delimiter}(?=(?:(?:[^"]*"){2})*[^"]*$)`);
         const values = line.split(regex);
-        const row: any = {};
+        const row: Record<string, any> = {};
         
         headers.forEach((h: string, i: number) => { 
             row[h] = values[i] ? values[i].trim().replace(/^["']|["']$/g, '') : ""; 
         });
         
         let dt = new Date(row.data_hora_entrada);
-        if (isNaN(dt.getTime()) && row.data_hora_entrada) {
+        if (Number.isNaN(dt.getTime()) && row.data_hora_entrada) {
             const parts = row.data_hora_entrada.split(/[\s/:]+/);
             if(parts.length >= 5) {
                 dt = new Date(`${parts[2]}-${parts[1]}-${parts[0]}T${parts[3]}:${parts[4]}:00`);
             }
         }
 
-        row.isValidDate = !isNaN(dt.getTime());
+        row.isValidDate = !Number.isNaN(dt.getTime());
         if(row.isValidDate) {
             row.dateObj = dt;
             row.yearMonth = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}`;
@@ -168,7 +168,7 @@ export default function App() {
             row.day = dt.getDay();
         }
         return row as TicketData;
-      }).filter((r) => r.isValidDate); 
+      }).filter((r: any) => r.isValidDate); 
 
       if(parsed.length === 0) {
           alert("Nenhuma linha com data válida encontrada.");
@@ -189,11 +189,11 @@ export default function App() {
     if (!rawData.length) return defaultStats;
 
     const monthMap: Record<string, number> = {};
-    rawData.forEach((d) => {
+    rawData.forEach((d: TicketData) => {
         monthMap[d.yearMonth] = (monthMap[d.yearMonth] || 0) + 1;
     });
     
-    const monthlyTrend = Object.keys(monthMap).sort().map(key => ({
+    const monthlyTrend = Object.keys(monthMap).sort().map((key: string) => ({
         month: key,
         volume: monthMap[key]
     }));
@@ -208,9 +208,9 @@ export default function App() {
 
     const monthsKeys = Object.keys(monthMap).sort();
     const lastMonthKey = monthsKeys[monthsKeys.length - 1];
-    const lastMonthData = rawData.filter(d => d.yearMonth === lastMonthKey);
+    const lastMonthData: TicketData[] = rawData.filter((d: TicketData) => d.yearMonth === lastMonthKey);
     
-    const lastMonthChannels = lastMonthData.reduce((acc: Record<string, number>, d) => { 
+    const lastMonthChannels = lastMonthData.reduce((acc: Record<string, number>, d: TicketData) => { 
       const c = d.canal?.toLowerCase() || 'outros';
       acc[c] = (acc[c] || 0) + 1; 
       return acc; 
@@ -236,12 +236,12 @@ export default function App() {
     const hcChat = Math.ceil((wlChatSec / netWorkSec) / 0.82) || 0;
     const hcEmail = Math.ceil((wlEmailSec / netWorkSec) / 0.82) || 0;
 
-    const sorted = [...rawData].sort((a, b) => a.dateObj.getTime() - b.dateObj.getTime());
+    const sorted = [...rawData].sort((a: TicketData, b: TicketData) => a.dateObj.getTime() - b.dateObj.getTime());
     const clientHistory = new Map<string, Date>();
     const recontactsByMonth: Record<string, { total: number; recontacts: number }> = {};
     let totalRecontacts = 0;
 
-    sorted.forEach((t) => {
+    sorted.forEach((t: TicketData) => {
       if (!t.client_id) return;
       
       const key = `${t.client_id}-${t.assunto}`;
@@ -258,14 +258,14 @@ export default function App() {
       clientHistory.set(key, t.dateObj);
     });
 
-    const fcrTrend = Object.keys(recontactsByMonth).sort().map(m => ({
+    const fcrTrend = Object.keys(recontactsByMonth).sort().map((m: string) => ({
         month: m,
         rate: parseFloat(((recontactsByMonth[m].recontacts / Math.max(recontactsByMonth[m].total, 1)) * 100).toFixed(1))
     }));
     const globalFCR = rawData.length > 0 ? (totalRecontacts / rawData.length) * 100 : 0;
 
     const subjectsMap: Record<string, { total: number; motives: Record<string, number> }> = {};
-    rawData.forEach((d) => {
+    rawData.forEach((d: TicketData) => {
         const ass = d.assunto || 'Não Classificado';
         const mot = d.motivo || 'Não Classificado';
         if (!subjectsMap[ass]) subjectsMap[ass] = { total: 0, motives: {} };
@@ -273,11 +273,11 @@ export default function App() {
         subjectsMap[ass].motives[mot] = (subjectsMap[ass].motives[mot] || 0) + 1;
     });
 
-    const pieSubjects = Object.keys(subjectsMap).map(k => ({ name: k, value: subjectsMap[k].total })).sort((a,b) => b.value - a.value);
+    const pieSubjects = Object.keys(subjectsMap).map((k: string) => ({ name: k, value: subjectsMap[k].total })).sort((a: any, b: any) => b.value - a.value);
 
     const heatmapGrid = Array(7).fill(null).map(() => Array(24).fill(0));
     let maxHeatmapVal = 0;
-    rawData.forEach((d) => {
+    rawData.forEach((d: TicketData) => {
         heatmapGrid[d.day][d.hour]++;
         if (heatmapGrid[d.day][d.hour] > maxHeatmapVal) maxHeatmapVal = heatmapGrid[d.day][d.hour];
     });
@@ -298,7 +298,7 @@ export default function App() {
     };
   }, [rawData, config]);
 
-  const s = stats || defaultStats;
+  const s: StatsType = stats || defaultStats;
 
   const getHcColorConfig = () => {
       if(s.total === 0) return { text: 'text-slate-900', bg: 'bg-slate-100', icon: 'text-slate-500' };
@@ -316,7 +316,7 @@ export default function App() {
       if (s.total === 0) return [];
       if (!selectedSubject) return s.pieSubjects || [];
       const motives = s.subjectsMap[selectedSubject]?.motives || {};
-      return Object.keys(motives).map(k => ({ name: k, value: motives[k] })).sort((a,b) => b.value - a.value);
+      return Object.keys(motives).map((k: string) => ({ name: k, value: motives[k] })).sort((a: any, b: any) => b.value - a.value);
   }, [s, selectedSubject]);
 
   const getHeatmapColor = (val: number, max: number) => {
@@ -386,25 +386,24 @@ export default function App() {
 
       setAiReport(aiText);
       
-    } catch (err: unknown) {
-      const e = err as Error;
-      if (e.message.includes('Failed to fetch') || e.message.includes('NetworkError')) {
-         setAiReport(`### Bloqueio de Rede 🛡️\n\nA requisição foi bloqueada localmente. Verifique configurações de AdBlock, Shields do Brave ou Firewalls corporativos.\n\n*(Detalhe Técnico: \`${e.message}\`)*`);
+    } catch (e: any) {
+      if (e?.message?.includes('Failed to fetch') || e?.message?.includes('NetworkError')) {
+         setAiReport(`### Bloqueio de Rede 🛡️\n\nA requisição foi bloqueada localmente. Verifique configurações de AdBlock, Shields do Brave ou Firewalls corporativos.\n\n*(Detalhe Técnico: \`${e?.message}\`)*`);
       } else {
-         setAiReport(`### Falha na API ⚠️\n\nErro de processamento.\n\n**Detalhe Técnico:**\n\`\`\`text\n${e.message}\n\`\`\``);
+         setAiReport(`### Falha na API ⚠️\n\nErro de processamento.\n\n**Detalhe Técnico:**\n\`\`\`text\n${e?.message}\n\`\`\``);
       }
     } finally {
       setIsAiLoading(false);
     }
   };
 
-  const CustomTooltip = (props: TooltipProps<number, string>) => {
+  const CustomTooltip = (props: any) => {
     const { active, payload, label } = props;
     if (active && payload && payload.length) {
       return (
         <div className="bg-white p-4 rounded-2xl shadow-xl border border-slate-100">
           <p className="font-bold text-slate-800 mb-1">{label}</p>
-          {payload.map((p, idx) => (
+          {payload.map((p: any, idx: number) => (
              <p key={idx} className="text-sm font-semibold" style={{ color: p.color }}>
                {p.name}: {p.value}
              </p>
@@ -445,7 +444,7 @@ export default function App() {
                   placeholder="Ex: E-commerce, Fintech..."
                   className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
                   value={config.companyMarket}
-                  onChange={(e) => setConfig({...config, companyMarket: e.target.value})}
+                  onChange={(e: any) => setConfig({...config, companyMarket: e.target.value})}
                 />
              </div>
           </section>
@@ -455,11 +454,11 @@ export default function App() {
             <div className="grid grid-cols-2 gap-3">
               <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200">
                 <label className="text-[10px] font-bold text-slate-500 uppercase mb-1 block">Equipa Atual</label>
-                <input type="number" className="text-xl font-black w-full bg-transparent outline-none" value={config.teamSize} onChange={(e) => setConfig({...config, teamSize: e.target.value === '' ? '' : parseInt(e.target.value)})}/>
+                <input type="number" className="text-xl font-black w-full bg-transparent outline-none" value={config.teamSize} onChange={(e: any) => setConfig({...config, teamSize: e.target.value === '' ? '' : parseInt(e.target.value)})}/>
               </div>
               <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200">
                 <label className="text-[10px] font-bold text-slate-500 uppercase mb-1 block">Carga Horária</label>
-                <select className="text-base font-black w-full bg-transparent outline-none cursor-pointer" value={config.shiftHours} onChange={(e) => setConfig({...config, shiftHours: parseInt(e.target.value)})}>
+                <select className="text-base font-black w-full bg-transparent outline-none cursor-pointer" value={config.shiftHours} onChange={(e: any) => setConfig({...config, shiftHours: parseInt(e.target.value)})}>
                    <option value={4}>4h diárias</option>
                    <option value={6}>6h diárias</option>
                    <option value={8}>8h diárias</option>
@@ -468,7 +467,7 @@ export default function App() {
             </div>
             <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 flex justify-between items-center">
               <label className="text-xs font-bold text-slate-600 uppercase">Pausa Total (Min)</label>
-              <input type="number" className="text-right text-lg font-black w-20 bg-transparent outline-none text-indigo-600" value={config.breakMinutes} onChange={(e) => setConfig({...config, breakMinutes: e.target.value === '' ? '' : parseInt(e.target.value)})}/>
+              <input type="number" className="text-right text-lg font-black w-20 bg-transparent outline-none text-indigo-600" value={config.breakMinutes} onChange={(e: any) => setConfig({...config, breakMinutes: e.target.value === '' ? '' : parseInt(e.target.value)})}/>
             </div>
           </section>
 
@@ -478,22 +477,22 @@ export default function App() {
              <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
                 <div className="flex items-center gap-2 text-indigo-600 mb-4"><Headset size={18}/> <span className="text-xs font-black uppercase">Voz / Telefone</span></div>
                 <div className="grid grid-cols-2 gap-3">
-                   <div className="bg-slate-50 p-3 rounded-xl"><label className="text-[10px] font-bold text-slate-500 uppercase block mb-1">TMA (Min)</label><input type="number" className="w-full font-black text-base bg-transparent" value={config.phoneAHT} onChange={(e) => setConfig({...config, phoneAHT: e.target.value === '' ? '' : parseFloat(e.target.value)})}/></div>
-                   <div className="bg-indigo-50 p-3 rounded-xl border border-indigo-100"><label className="text-[10px] font-black text-indigo-600 uppercase block mb-1">TME (Min)</label><input type="number" className="w-full font-black text-base bg-transparent text-indigo-700" value={config.phoneTMEFirst} onChange={(e) => setConfig({...config, phoneTMEFirst: e.target.value === '' ? '' : parseInt(e.target.value)})}/></div>
+                   <div className="bg-slate-50 p-3 rounded-xl"><label className="text-[10px] font-bold text-slate-500 uppercase block mb-1">TMA (Min)</label><input type="number" className="w-full font-black text-base bg-transparent" value={config.phoneAHT} onChange={(e: any) => setConfig({...config, phoneAHT: e.target.value === '' ? '' : parseFloat(e.target.value)})}/></div>
+                   <div className="bg-indigo-50 p-3 rounded-xl border border-indigo-100"><label className="text-[10px] font-black text-indigo-600 uppercase block mb-1">TME (Min)</label><input type="number" className="w-full font-black text-base bg-transparent text-indigo-700" value={config.phoneTMEFirst} onChange={(e: any) => setConfig({...config, phoneTMEFirst: e.target.value === '' ? '' : parseInt(e.target.value)})}/></div>
                 </div>
              </div>
 
              <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
                 <div className="flex items-center gap-2 text-indigo-600 mb-4"><MousePointer2 size={18}/> <span className="text-xs font-black uppercase">Chat / Messaging</span></div>
                 <div className="grid grid-cols-3 gap-2 mb-3">
-                   <div className="bg-slate-50 p-3 rounded-xl text-center"><label className="text-[9px] font-bold text-slate-500 uppercase block mb-1">TMA (m)</label><input type="number" className="w-full font-black text-sm bg-transparent text-center" value={config.chatAHT} onChange={(e) => setConfig({...config, chatAHT: e.target.value === '' ? '' : parseFloat(e.target.value)})}/></div>
-                   <div className="bg-indigo-50 p-3 rounded-xl text-center border border-indigo-100"><label className="text-[9px] font-black text-indigo-600 uppercase block mb-1">TME (m)</label><input type="number" className="w-full font-black text-sm bg-transparent text-center text-indigo-700" value={config.chatTMEFirst} onChange={(e) => setConfig({...config, chatTMEFirst: e.target.value === '' ? '' : parseInt(e.target.value)})}/></div>
-                   <div className="bg-indigo-50 p-3 rounded-xl text-center border border-indigo-100"><label className="text-[9px] font-black text-indigo-600 uppercase block mb-1">Reab (m)</label><input type="number" className="w-full font-black text-sm bg-transparent text-center text-indigo-700" value={config.chatSLAReopen} onChange={(e) => setConfig({...config, chatSLAReopen: e.target.value === '' ? '' : parseInt(e.target.value)})}/></div>
+                   <div className="bg-slate-50 p-3 rounded-xl text-center"><label className="text-[9px] font-bold text-slate-500 uppercase block mb-1">TMA (m)</label><input type="number" className="w-full font-black text-sm bg-transparent text-center" value={config.chatAHT} onChange={(e: any) => setConfig({...config, chatAHT: e.target.value === '' ? '' : parseFloat(e.target.value)})}/></div>
+                   <div className="bg-indigo-50 p-3 rounded-xl text-center border border-indigo-100"><label className="text-[9px] font-black text-indigo-600 uppercase block mb-1">TME (m)</label><input type="number" className="w-full font-black text-sm bg-transparent text-center text-indigo-700" value={config.chatTMEFirst} onChange={(e: any) => setConfig({...config, chatTMEFirst: e.target.value === '' ? '' : parseInt(e.target.value)})}/></div>
+                   <div className="bg-indigo-50 p-3 rounded-xl text-center border border-indigo-100"><label className="text-[9px] font-black text-indigo-600 uppercase block mb-1">Reab (m)</label><input type="number" className="w-full font-black text-sm bg-transparent text-center text-indigo-700" value={config.chatSLAReopen} onChange={(e: any) => setConfig({...config, chatSLAReopen: e.target.value === '' ? '' : parseInt(e.target.value)})}/></div>
                 </div>
                 <div className="bg-slate-50 p-3 rounded-xl flex justify-between items-center">
                    <label className="text-[10px] font-bold text-slate-600 uppercase">Simultaneidade</label>
-                   <select className="bg-transparent font-black text-sm outline-none text-indigo-600 text-right" value={config.chatConcurrency} onChange={(e) => setConfig({...config, chatConcurrency: parseInt(e.target.value)})}>
-                      {[1,2,3,4,5,6,7,8].map(n => <option key={n} value={n}>{n}x</option>)}
+                   <select className="bg-transparent font-black text-sm outline-none text-indigo-600 text-right" value={config.chatConcurrency} onChange={(e: any) => setConfig({...config, chatConcurrency: parseInt(e.target.value)})}>
+                      {[1,2,3,4,5,6,7,8].map((n: number) => <option key={n} value={n}>{n}x</option>)}
                    </select>
                 </div>
              </div>
@@ -501,9 +500,9 @@ export default function App() {
              <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
                 <div className="flex items-center gap-2 text-indigo-600 mb-4"><Mail size={18}/> <span className="text-xs font-black uppercase">E-mail / Tickets</span></div>
                 <div className="grid grid-cols-3 gap-2">
-                   <div className="bg-slate-50 p-3 rounded-xl text-center"><label className="text-[9px] font-bold text-slate-500 uppercase block mb-1">TMA (h)</label><input type="number" className="w-full font-black text-sm bg-transparent text-center" value={config.emailAHT} onChange={(e) => setConfig({...config, emailAHT: e.target.value === '' ? '' : parseFloat(e.target.value)})}/></div>
-                   <div className="bg-indigo-50 p-3 rounded-xl text-center border border-indigo-100"><label className="text-[9px] font-black text-indigo-600 uppercase block mb-1">TME (h)</label><input type="number" className="w-full font-black text-sm bg-transparent text-center text-indigo-700" value={config.emailTMEFirst} onChange={(e) => setConfig({...config, emailTMEFirst: e.target.value === '' ? '' : parseInt(e.target.value)})}/></div>
-                   <div className="bg-indigo-50 p-3 rounded-xl text-center border border-indigo-100"><label className="text-[9px] font-black text-indigo-600 uppercase block mb-1">Reab (h)</label><input type="number" className="w-full font-black text-sm bg-transparent text-center text-indigo-700" value={config.emailSLAReopen} onChange={(e) => setConfig({...config, emailSLAReopen: e.target.value === '' ? '' : parseInt(e.target.value)})}/></div>
+                   <div className="bg-slate-50 p-3 rounded-xl text-center"><label className="text-[9px] font-bold text-slate-500 uppercase block mb-1">TMA (h)</label><input type="number" className="w-full font-black text-sm bg-transparent text-center" value={config.emailAHT} onChange={(e: any) => setConfig({...config, emailAHT: e.target.value === '' ? '' : parseFloat(e.target.value)})}/></div>
+                   <div className="bg-indigo-50 p-3 rounded-xl text-center border border-indigo-100"><label className="text-[9px] font-black text-indigo-600 uppercase block mb-1">TME (h)</label><input type="number" className="w-full font-black text-sm bg-transparent text-center text-indigo-700" value={config.emailTMEFirst} onChange={(e: any) => setConfig({...config, emailTMEFirst: e.target.value === '' ? '' : parseInt(e.target.value)})}/></div>
+                   <div className="bg-indigo-50 p-3 rounded-xl text-center border border-indigo-100"><label className="text-[9px] font-black text-indigo-600 uppercase block mb-1">Reab (h)</label><input type="number" className="w-full font-black text-sm bg-transparent text-center text-indigo-700" value={config.emailSLAReopen} onChange={(e: any) => setConfig({...config, emailSLAReopen: e.target.value === '' ? '' : parseInt(e.target.value)})}/></div>
                 </div>
              </div>
           </section>
@@ -647,7 +646,7 @@ export default function App() {
                             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9"/>
                             <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{fontSize: 12, fill: '#64748b'}} />
                             <YAxis axisLine={false} tickLine={false} tick={{fontSize: 12, fill: '#64748b'}} />
-                            <RechartsTooltip content={CustomTooltip} cursor={{ stroke: '#cbd5e1', strokeWidth: 1, strokeDasharray: '4 4' }} />
+                            <RechartsTooltip content={(props: any) => <CustomTooltip {...props} />} cursor={{ stroke: '#cbd5e1', strokeWidth: 1, strokeDasharray: '4 4' }} />
                             <Area type="monotone" dataKey="volume" name="Tickets" stroke="#4F46E5" strokeWidth={3} fillOpacity={1} fill="url(#colorVol)" />
                         </AreaChart>
                     </ResponsiveContainer>
@@ -661,8 +660,8 @@ export default function App() {
                         <LineChart data={s.fcrTrend} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9"/>
                             <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{fontSize: 12, fill: '#64748b'}} />
-                            <YAxis axisLine={false} tickLine={false} tick={{fontSize: 12, fill: '#64748b'}} tickFormatter={(v) => `${v}%`} />
-                            <RechartsTooltip content={CustomTooltip} cursor={{ stroke: '#cbd5e1', strokeWidth: 1, strokeDasharray: '4 4' }} />
+                            <YAxis axisLine={false} tickLine={false} tick={{fontSize: 12, fill: '#64748b'}} tickFormatter={(v: any) => `${v}%`} />
+                            <RechartsTooltip content={(props: any) => <CustomTooltip {...props} />} cursor={{ stroke: '#cbd5e1', strokeWidth: 1, strokeDasharray: '4 4' }} />
                             <Line type="monotone" dataKey="rate" name="Recontato (%)" stroke="#334155" strokeWidth={3} dot={{r: 4, fill: '#334155', strokeWidth: 2, stroke: '#fff'}} />
                         </LineChart>
                     </ResponsiveContainer>
@@ -693,16 +692,16 @@ export default function App() {
                                 outerRadius={160}
                                 paddingAngle={2}
                                 dataKey="value"
-                                onClick={handlePieClick}
+                                onClick={handlePieClick as any}
                                 className={!selectedSubject ? "cursor-pointer" : ""}
                                 label={renderPieLabel}
                                 labelLine={true}
                             >
-                                {currentPieData.map((_, i) => (
+                                {currentPieData.map((_: any, i: number) => (
                                     <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} className="hover:opacity-80 transition-opacity" />
                                 ))}
                             </Pie>
-                            <RechartsTooltip content={CustomTooltip} />
+                            <RechartsTooltip content={(props: any) => <CustomTooltip {...props} />} />
                         </PieChart>
                     </ResponsiveContainer>
                 </div>
@@ -714,7 +713,7 @@ export default function App() {
                   
                   <div className="flex-1 overflow-auto pr-2 pb-2 custom-scrollbar">
                       <div className="flex ml-12 mb-2">
-                          {Array.from({length: 24}).map((_, h) => (
+                          {Array.from({length: 24}).map((_: any, h: number) => (
                               <div key={h} className="flex-1 text-center text-[9px] font-bold text-slate-400 min-w-[24px]">
                                   {h}h
                               </div>
@@ -722,7 +721,7 @@ export default function App() {
                       </div>
                       
                       <div className="flex flex-col gap-1">
-                          {WEEKDAYS.map((day, dIdx) => (
+                          {WEEKDAYS.map((day: string, dIdx: number) => (
                               <div key={day} className="flex items-center h-8">
                                   <div className="w-12 text-[10px] font-black text-slate-600 uppercase text-right pr-3">{day}</div>
                                   <div className="flex flex-1 gap-1 h-full">
@@ -776,7 +775,7 @@ export default function App() {
                         </div>
                     ) : aiReport ? (
                         <div className="prose prose-invert prose-indigo max-w-none text-slate-300">
-                            {aiReport.split('\n').map((paragraph, index) => {
+                            {aiReport.split('\n').map((paragraph: string, index: number) => {
                                 if (paragraph.startsWith('###')) return <h3 key={index} className="text-xl font-bold text-white mt-6 mb-2">{paragraph.replace('###', '')}</h3>;
                                 if (paragraph.startsWith('##')) return <h2 key={index} className="text-2xl font-black text-white mt-8 mb-4 border-b border-white/10 pb-2">{paragraph.replace('##', '')}</h2>;
                                 if (paragraph.startsWith('#')) return <h1 key={index} className="text-3xl font-black text-indigo-400 mt-6 mb-4">{paragraph.replace('#', '')}</h1>;
