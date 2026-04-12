@@ -1,17 +1,17 @@
 import React, { useState, useMemo } from 'react';
 import { 
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, 
-  PieChart, Pie, Cell, LineChart, Line, BarChart, Bar, Legend
+  PieChart, Pie, Cell, LineChart, Line
 } from 'recharts';
 import { 
   Upload, Users, TrendingUp, AlertTriangle, Sparkles, 
-  Building2, Timer, FileText, Layout, Headset, MousePointer2, 
+  Building2, Timer, FileText, Activity, Layout, Headset, MousePointer2, 
   Mail, ArrowLeft, Download, FileDown
 } from 'lucide-react';
 
 /**
- * SONATA CX CAPACITY PLANNER - v4.5
- * Melhorias: Identidade Visual atualizada (Logo Sonata CX) e Favicon.
+ * SONATA CX CAPACITY PLANNER - v4.5 (TS Build Fix)
+ * Correção estrita de tipagem TypeScript para deployment em produção (Vercel).
  */
 
 const CHART_COLORS = ['#4F46E5', '#818CF8', '#C7D2FE', '#312E81', '#6366F1', '#4338CA', '#1E1B4B', '#A5B4FC'];
@@ -19,19 +19,16 @@ const WEEKDAYS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
 
 export default function App() {
   
-  // API Key Embutida
   const apiKey = "AIzaSyAOsfJ3sH7rKEhAxFJ3f5pWNk4OUaVzZpY"; 
   
-  // Estados da Aplicação
-  const [rawData, setRawData] = useState([]);
+  const [rawData, setRawData] = useState<any[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
   const [isReportGenerated, setIsReportGenerated] = useState(false);
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [aiReport, setAiReport] = useState("");
-  const [selectedSubject, setSelectedSubject] = useState(null);
+  const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
 
-  // Inputs Operacionais
-  const [config, setConfig] = useState({
+  const [config, setConfig] = useState<any>({
     companyMarket: "", 
     teamSize: 50,
     shiftHours: 8, 
@@ -47,7 +44,6 @@ export default function App() {
     emailSLAReopen: 24 
   });
 
-  // Gerador de Template CSV Dinâmico
   const handleDownloadTemplate = () => {
     const csvContent = "id_ticket;data_hora_entrada;client_id;canal;assunto;motivo\n" +
                        "TKT-005018;01/01/2025 00:08;CLI-18980;chat;logistica;atraso\n" +
@@ -64,13 +60,12 @@ export default function App() {
     document.body.removeChild(link);
   };
 
-  // Importação e Higienização do CSV
-  const handleImport = (e) => {
+  const handleImport = (e: any) => {
     const file = e.target.files[0];
     if (!file) return;
 
     const reader = new FileReader();
-    reader.onload = (event) => {
+    reader.onload = (event: any) => {
       const text = event.target.result;
       const lines = text.split('\n');
       if (lines.length < 2) {
@@ -79,29 +74,29 @@ export default function App() {
       }
 
       const delimiter = lines[0].includes(';') ? ';' : ',';
-      const headers = lines[0].split(delimiter).map(h => h.trim().toLowerCase().replace(/["']/g, ''));
+      const headers = lines[0].split(delimiter).map((h: string) => h.trim().toLowerCase().replace(/["']/g, ''));
       
-      const parsed = lines.slice(1).filter(l => {
+      const parsed = lines.slice(1).filter((l: string) => {
         const cleaned = l.replace(/[;,]/g, '').trim();
         return cleaned !== "";
-      }).map(line => {
+      }).map((line: string) => {
         const regex = new RegExp(`${delimiter}(?=(?:(?:[^"]*"){2})*[^"]*$)`);
         const values = line.split(regex);
-        const row = {};
+        const row: any = {};
         
-        headers.forEach((h, i) => { 
+        headers.forEach((h: string, i: number) => { 
             row[h] = values[i] ? values[i].trim().replace(/^["']|["']$/g, '') : ""; 
         });
         
         let dt = new Date(row.data_hora_entrada);
-        if (isNaN(dt) && row.data_hora_entrada) {
+        if (isNaN(dt.getTime()) && row.data_hora_entrada) {
             const parts = row.data_hora_entrada.split(/[\s/:]+/);
             if(parts.length >= 5) {
                 dt = new Date(`${parts[2]}-${parts[1]}-${parts[0]}T${parts[3]}:${parts[4]}:00`);
             }
         }
 
-        row.isValidDate = !isNaN(dt);
+        row.isValidDate = !isNaN(dt.getTime());
         if(row.isValidDate) {
             row.dateObj = dt;
             row.yearMonth = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}`;
@@ -109,10 +104,10 @@ export default function App() {
             row.day = dt.getDay();
         }
         return row;
-      }).filter(r => r.isValidDate); 
+      }).filter((r: any) => r.isValidDate); 
 
       if(parsed.length === 0) {
-          alert("Nenhuma linha com data válida encontrada. Verifique se a coluna se chama 'data_hora_entrada'.");
+          alert("Nenhuma linha com data válida encontrada.");
           return;
       }
 
@@ -126,11 +121,10 @@ export default function App() {
     e.target.value = null; 
   };
 
-  // Motor de Cálculo Principal
   const stats = useMemo(() => {
     if (!rawData.length) return null;
 
-    const monthMap = {};
+    const monthMap: any = {};
     rawData.forEach(d => {
         monthMap[d.yearMonth] = (monthMap[d.yearMonth] || 0) + 1;
     });
@@ -152,7 +146,7 @@ export default function App() {
     const lastMonthKey = monthsKeys[monthsKeys.length - 1];
     const lastMonthData = rawData.filter(d => d.yearMonth === lastMonthKey);
     
-    const lastMonthChannels = lastMonthData.reduce((acc, d) => { 
+    const lastMonthChannels = lastMonthData.reduce((acc: any, d: any) => { 
       const c = d.canal?.toLowerCase() || 'outros';
       acc[c] = (acc[c] || 0) + 1; 
       return acc; 
@@ -180,7 +174,7 @@ export default function App() {
 
     const sorted = [...rawData].sort((a, b) => a.dateObj - b.dateObj);
     const clientHistory = new Map();
-    const recontactsByMonth = {};
+    const recontactsByMonth: any = {};
     let totalRecontacts = 0;
 
     sorted.forEach(t => {
@@ -206,7 +200,7 @@ export default function App() {
     }));
     const globalFCR = rawData.length > 0 ? (totalRecontacts / rawData.length) * 100 : 0;
 
-    const subjectsMap = {};
+    const subjectsMap: any = {};
     rawData.forEach(d => {
         const ass = d.assunto || 'Não Classificado';
         const mot = d.motivo || 'Não Classificado';
@@ -248,7 +242,7 @@ export default function App() {
       return { text: 'text-emerald-500', bg: 'bg-emerald-50', icon: 'text-emerald-400' }; 
   };
 
-  const handlePieClick = (data) => {
+  const handlePieClick = (data: any) => {
       if (!selectedSubject && data && data.name) setSelectedSubject(data.name);
   };
 
@@ -259,14 +253,13 @@ export default function App() {
       return Object.keys(motives).map(k => ({ name: k, value: motives[k] })).sort((a,b) => b.value - a.value);
   }, [stats, selectedSubject]);
 
-  const getHeatmapColor = (val, max) => {
-      if (val === 0) return '#f1f5f9'; 
+  const getHeatmapColor = (val: number, max: number) => {
+      if (val === 0 || !max) return '#f1f5f9'; 
       const ratio = Math.max(0, Math.min(1, val / max));
       const hue = (1 - ratio) * 200;
       return `hsl(${hue}, 90%, 60%)`;
   };
 
-  // Integração API Gemini
   const generateReportAndAI = async () => {
     setIsReportGenerated(true); 
     setIsAiLoading(true);
@@ -280,9 +273,9 @@ export default function App() {
     DADOS:
     - Mercado: ${config.companyMarket}
     - Headcount Atual: ${config.teamSize} analistas.
-    - Headcount Ideal Projetado (Mês Recente): ${stats.hcIdeal} analistas.
-    - Crescimento Mensal Médio: ${(stats.growth * 100).toFixed(1)}%
-    - Taxa de Recontato (14 dias): ${stats.globalFCR.toFixed(1)}%
+    - Headcount Ideal Projetado (Mês Recente): ${stats?.hcIdeal || 0} analistas.
+    - Crescimento Mensal Médio: ${((stats?.growth || 0) * 100).toFixed(1)}%
+    - Taxa de Recontato (14 dias): ${(stats?.globalFCR || 0).toFixed(1)}%
 
     REGRAS:
     1. Baseie-se nas médias históricas apontadas.
@@ -327,7 +320,7 @@ export default function App() {
 
       setAiReport(aiText);
       
-    } catch (e) {
+    } catch (e: any) {
       if (e.message.includes('Failed to fetch') || e.message.includes('NetworkError')) {
          setAiReport(`### Bloqueio de Rede 🛡️\n\nA requisição foi bloqueada localmente. Verifique configurações de AdBlock, Shields do Brave ou Firewalls corporativos.\n\n*(Detalhe Técnico: \`${e.message}\`)*`);
       } else {
@@ -338,12 +331,12 @@ export default function App() {
     }
   };
 
-  const CustomTooltip = ({ active, payload, label }) => {
+  const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       return (
         <div className="bg-white p-4 rounded-2xl shadow-xl border border-slate-100">
           <p className="font-bold text-slate-800 mb-1">{label}</p>
-          {payload.map((p, idx) => (
+          {payload.map((p: any, idx: number) => (
              <p key={idx} className="text-sm font-semibold" style={{ color: p.color }}>
                {p.name}: {p.value}
              </p>
@@ -354,7 +347,7 @@ export default function App() {
     return null;
   };
 
-  const renderPieLabel = ({ name, percent }) => {
+  const renderPieLabel = ({ name, percent }: any) => {
       if(percent < 0.05) return null; 
       return `${name} (${(percent * 100).toFixed(0)}%)`;
   };
@@ -364,10 +357,8 @@ export default function App() {
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col lg:flex-row text-slate-800 font-sans">
       
-      {/* BARRA LATERAL - INPUTS */}
       <aside className="w-full lg:w-[400px] bg-white border-r border-slate-200 p-8 overflow-y-auto max-h-screen sticky top-0 shadow-lg z-50 flex flex-col">
         <div className="flex flex-col items-center mb-8 pb-6 border-b border-slate-100">
-          {/* LOGO ATUALIZADA AQUI: Substituímos o ícone "Activity" pela sua imagem logo-branca.png */}
           <div className="bg-indigo-600 p-3 flex items-center justify-center rounded-2xl mb-3 shadow-lg shadow-indigo-200 w-14 h-14">
              <img src="/logo-branca.png" alt="Sonata CX Logo" className="w-8 h-8 object-contain" />
           </div>
@@ -376,7 +367,6 @@ export default function App() {
         </div>
 
         <div className="space-y-8 flex-1">
-          {/* Mercado */}
           <section className="space-y-3">
              <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200">
                 <label className="text-xs font-black text-indigo-600 uppercase tracking-widest flex items-center gap-2 mb-2">
@@ -386,22 +376,21 @@ export default function App() {
                   placeholder="Ex: E-commerce, Fintech..."
                   className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
                   value={config.companyMarket}
-                  onChange={e => setConfig({...config, companyMarket: e.target.value})}
+                  onChange={(e) => setConfig({...config, companyMarket: e.target.value})}
                 />
              </div>
           </section>
 
-          {/* Equipa e Jornada */}
           <section className="space-y-4">
             <h3 className="text-sm font-black text-slate-600 uppercase tracking-widest flex items-center gap-2"><Users size={16}/> Time e Jornada</h3>
             <div className="grid grid-cols-2 gap-3">
               <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200">
                 <label className="text-[10px] font-bold text-slate-500 uppercase mb-1 block">Time Atual</label>
-                <input type="number" className="text-xl font-black w-full bg-transparent outline-none" value={config.teamSize} onChange={e => setConfig({...config, teamSize: e.target.value === '' ? '' : parseInt(e.target.value)})}/>
+                <input type="number" className="text-xl font-black w-full bg-transparent outline-none" value={config.teamSize} onChange={(e) => setConfig({...config, teamSize: e.target.value === '' ? '' : parseInt(e.target.value)})}/>
               </div>
               <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200">
                 <label className="text-[10px] font-bold text-slate-500 uppercase mb-1 block">Carga Horária</label>
-                <select className="text-base font-black w-full bg-transparent outline-none cursor-pointer" value={config.shiftHours} onChange={e => setConfig({...config, shiftHours: parseInt(e.target.value)})}>
+                <select className="text-base font-black w-full bg-transparent outline-none cursor-pointer" value={config.shiftHours} onChange={(e) => setConfig({...config, shiftHours: parseInt(e.target.value)})}>
                    <option value={4}>4h diárias</option>
                    <option value={6}>6h diárias</option>
                    <option value={8}>8h diárias</option>
@@ -410,46 +399,42 @@ export default function App() {
             </div>
             <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 flex justify-between items-center">
               <label className="text-xs font-bold text-slate-600 uppercase">Pausa Total (Min)</label>
-              <input type="number" className="text-right text-lg font-black w-20 bg-transparent outline-none text-indigo-600" value={config.breakMinutes} onChange={e => setConfig({...config, breakMinutes: e.target.value === '' ? '' : parseInt(e.target.value)})}/>
+              <input type="number" className="text-right text-lg font-black w-20 bg-transparent outline-none text-indigo-600" value={config.breakMinutes} onChange={(e) => setConfig({...config, breakMinutes: e.target.value === '' ? '' : parseInt(e.target.value)})}/>
             </div>
           </section>
 
-          {/* Performance e Metas */}
           <section className="space-y-5">
              <h3 className="text-sm font-black text-slate-600 uppercase tracking-widest flex items-center gap-2"><Timer size={16}/> Performance e Metas</h3>
              
-             {/* Telefone */}
              <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
                 <div className="flex items-center gap-2 text-indigo-600 mb-4"><Headset size={18}/> <span className="text-xs font-black uppercase">Voz / Telefone</span></div>
                 <div className="grid grid-cols-2 gap-3">
-                   <div className="bg-slate-50 p-3 rounded-xl"><label className="text-[10px] font-bold text-slate-500 uppercase block mb-1">TMA (Min)</label><input type="number" className="w-full font-black text-base bg-transparent" value={config.phoneAHT} onChange={e => setConfig({...config, phoneAHT: e.target.value === '' ? '' : parseFloat(e.target.value)})}/></div>
-                   <div className="bg-indigo-50 p-3 rounded-xl border border-indigo-100"><label className="text-[10px] font-black text-indigo-600 uppercase block mb-1">TME (Min)</label><input type="number" className="w-full font-black text-base bg-transparent text-indigo-700" value={config.phoneTMEFirst} onChange={e => setConfig({...config, phoneTMEFirst: e.target.value === '' ? '' : parseInt(e.target.value)})}/></div>
+                   <div className="bg-slate-50 p-3 rounded-xl"><label className="text-[10px] font-bold text-slate-500 uppercase block mb-1">TMA (Min)</label><input type="number" className="w-full font-black text-base bg-transparent" value={config.phoneAHT} onChange={(e) => setConfig({...config, phoneAHT: e.target.value === '' ? '' : parseFloat(e.target.value)})}/></div>
+                   <div className="bg-indigo-50 p-3 rounded-xl border border-indigo-100"><label className="text-[10px] font-black text-indigo-600 uppercase block mb-1">TME (Min)</label><input type="number" className="w-full font-black text-base bg-transparent text-indigo-700" value={config.phoneTMEFirst} onChange={(e) => setConfig({...config, phoneTMEFirst: e.target.value === '' ? '' : parseInt(e.target.value)})}/></div>
                 </div>
              </div>
 
-             {/* Chat */}
              <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
                 <div className="flex items-center gap-2 text-indigo-600 mb-4"><MousePointer2 size={18}/> <span className="text-xs font-black uppercase">Chat / Messaging</span></div>
                 <div className="grid grid-cols-3 gap-2 mb-3">
-                   <div className="bg-slate-50 p-3 rounded-xl text-center"><label className="text-[9px] font-bold text-slate-500 uppercase block mb-1">TMA (m)</label><input type="number" className="w-full font-black text-sm bg-transparent text-center" value={config.chatAHT} onChange={e => setConfig({...config, chatAHT: e.target.value === '' ? '' : parseFloat(e.target.value)})}/></div>
-                   <div className="bg-indigo-50 p-3 rounded-xl text-center border border-indigo-100"><label className="text-[9px] font-black text-indigo-600 uppercase block mb-1">TME (m)</label><input type="number" className="w-full font-black text-sm bg-transparent text-center text-indigo-700" value={config.chatTMEFirst} onChange={e => setConfig({...config, chatTMEFirst: e.target.value === '' ? '' : parseInt(e.target.value)})}/></div>
-                   <div className="bg-indigo-50 p-3 rounded-xl text-center border border-indigo-100"><label className="text-[9px] font-black text-indigo-600 uppercase block mb-1">Reab (m)</label><input type="number" className="w-full font-black text-sm bg-transparent text-center text-indigo-700" value={config.chatSLAReopen} onChange={e => setConfig({...config, chatSLAReopen: e.target.value === '' ? '' : parseInt(e.target.value)})}/></div>
+                   <div className="bg-slate-50 p-3 rounded-xl text-center"><label className="text-[9px] font-bold text-slate-500 uppercase block mb-1">TMA (m)</label><input type="number" className="w-full font-black text-sm bg-transparent text-center" value={config.chatAHT} onChange={(e) => setConfig({...config, chatAHT: e.target.value === '' ? '' : parseFloat(e.target.value)})}/></div>
+                   <div className="bg-indigo-50 p-3 rounded-xl text-center border border-indigo-100"><label className="text-[9px] font-black text-indigo-600 uppercase block mb-1">TME (m)</label><input type="number" className="w-full font-black text-sm bg-transparent text-center text-indigo-700" value={config.chatTMEFirst} onChange={(e) => setConfig({...config, chatTMEFirst: e.target.value === '' ? '' : parseInt(e.target.value)})}/></div>
+                   <div className="bg-indigo-50 p-3 rounded-xl text-center border border-indigo-100"><label className="text-[9px] font-black text-indigo-600 uppercase block mb-1">Reab (m)</label><input type="number" className="w-full font-black text-sm bg-transparent text-center text-indigo-700" value={config.chatSLAReopen} onChange={(e) => setConfig({...config, chatSLAReopen: e.target.value === '' ? '' : parseInt(e.target.value)})}/></div>
                 </div>
                 <div className="bg-slate-50 p-3 rounded-xl flex justify-between items-center">
                    <label className="text-[10px] font-bold text-slate-600 uppercase">Simultaneidade</label>
-                   <select className="bg-transparent font-black text-sm outline-none text-indigo-600 text-right" value={config.chatConcurrency} onChange={e => setConfig({...config, chatConcurrency: parseInt(e.target.value)})}>
+                   <select className="bg-transparent font-black text-sm outline-none text-indigo-600 text-right" value={config.chatConcurrency} onChange={(e) => setConfig({...config, chatConcurrency: parseInt(e.target.value)})}>
                       {[1,2,3,4,5,6,7,8].map(n => <option key={n} value={n}>{n}x</option>)}
                    </select>
                 </div>
              </div>
 
-             {/* E-mail */}
              <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
                 <div className="flex items-center gap-2 text-indigo-600 mb-4"><Mail size={18}/> <span className="text-xs font-black uppercase">E-mail / Tickets</span></div>
                 <div className="grid grid-cols-3 gap-2">
-                   <div className="bg-slate-50 p-3 rounded-xl text-center"><label className="text-[9px] font-bold text-slate-500 uppercase block mb-1">TMA (h)</label><input type="number" className="w-full font-black text-sm bg-transparent text-center" value={config.emailAHT} onChange={e => setConfig({...config, emailAHT: e.target.value === '' ? '' : parseFloat(e.target.value)})}/></div>
-                   <div className="bg-indigo-50 p-3 rounded-xl text-center border border-indigo-100"><label className="text-[9px] font-black text-indigo-600 uppercase block mb-1">TME (h)</label><input type="number" className="w-full font-black text-sm bg-transparent text-center text-indigo-700" value={config.emailTMEFirst} onChange={e => setConfig({...config, emailTMEFirst: e.target.value === '' ? '' : parseInt(e.target.value)})}/></div>
-                   <div className="bg-indigo-50 p-3 rounded-xl text-center border border-indigo-100"><label className="text-[9px] font-black text-indigo-600 uppercase block mb-1">Reab (h)</label><input type="number" className="w-full font-black text-sm bg-transparent text-center text-indigo-700" value={config.emailSLAReopen} onChange={e => setConfig({...config, emailSLAReopen: e.target.value === '' ? '' : parseInt(e.target.value)})}/></div>
+                   <div className="bg-slate-50 p-3 rounded-xl text-center"><label className="text-[9px] font-bold text-slate-500 uppercase block mb-1">TMA (h)</label><input type="number" className="w-full font-black text-sm bg-transparent text-center" value={config.emailAHT} onChange={(e) => setConfig({...config, emailAHT: e.target.value === '' ? '' : parseFloat(e.target.value)})}/></div>
+                   <div className="bg-indigo-50 p-3 rounded-xl text-center border border-indigo-100"><label className="text-[9px] font-black text-indigo-600 uppercase block mb-1">TME (h)</label><input type="number" className="w-full font-black text-sm bg-transparent text-center text-indigo-700" value={config.emailTMEFirst} onChange={(e) => setConfig({...config, emailTMEFirst: e.target.value === '' ? '' : parseInt(e.target.value)})}/></div>
+                   <div className="bg-indigo-50 p-3 rounded-xl text-center border border-indigo-100"><label className="text-[9px] font-black text-indigo-600 uppercase block mb-1">Reab (h)</label><input type="number" className="w-full font-black text-sm bg-transparent text-center text-indigo-700" value={config.emailSLAReopen} onChange={(e) => setConfig({...config, emailSLAReopen: e.target.value === '' ? '' : parseInt(e.target.value)})}/></div>
                 </div>
              </div>
           </section>
@@ -466,7 +451,6 @@ export default function App() {
         </div>
       </aside>
 
-      {/* ÁREA PRINCIPAL DE VISUALIZAÇÃO */}
       <main className="flex-1 p-6 lg:p-10 overflow-y-auto relative">
         
         {!isLoaded ? (
@@ -495,7 +479,6 @@ export default function App() {
                    </div>
                  </div>
                  
-                 {/* Botão gerador de Template Dinâmico */}
                  <button 
                    onClick={handleDownloadTemplate}
                    className="flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-indigo-600 transition-colors underline underline-offset-4"
@@ -504,7 +487,6 @@ export default function App() {
                  </button>
              </div>
 
-             {/* AVISO DE SEGURANÇA (LGPD) */}
              <div className="bg-red-50 border border-red-200 p-6 rounded-2xl max-w-lg mx-auto text-left shadow-sm">
                 <div className="flex items-start gap-3">
                   <AlertTriangle className="text-red-500 shrink-0 mt-1" size={24} />
@@ -528,17 +510,15 @@ export default function App() {
               </div>
               <h3 className="text-2xl font-black text-slate-900 mb-2">Base Importada com Sucesso!</h3>
               <p className="text-slate-500 mb-8 text-lg">
-                 O ficheiro possui <strong>{stats?.total.toLocaleString()}</strong> contatos válidos.<br/><br/>
+                 O ficheiro possui <strong>{stats?.total?.toLocaleString()}</strong> contatos válidos.<br/><br/>
                  Para visualizar o dashboard, preencha o campo <strong>Mercado da Empresa</strong> na barra lateral e clique em <strong>Gerar Relatório Estratégico</strong>.
               </p>
           </div>
         ) : (
           <div className="space-y-8 pb-20 max-w-7xl mx-auto">
             
-            {/* GRELHA DE KPIS */}
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
               
-              {/* HC Ideal */}
               <div className={`p-6 rounded-3xl border border-slate-200 shadow-sm relative overflow-hidden group bg-white`}>
                   <div className={`absolute -right-4 -top-4 w-24 h-24 rounded-full group-hover:scale-150 transition-transform duration-500 -z-10 ${hcColors.bg}`}></div>
                   <div className="flex justify-between items-start mb-4">
@@ -547,52 +527,48 @@ export default function App() {
                       </div>
                       <span className="bg-slate-100 text-slate-500 text-[10px] font-bold px-2 py-1 rounded">vs {config.teamSize}</span>
                   </div>
-                  <div className={`text-5xl font-black mb-1 ${hcColors.text}`}>{stats.hcIdeal}</div>
-                  <div className="text-[11px] text-slate-500 font-medium">Vol Diário Ref: {stats.avgDailyVolLastMonth} tickets</div>
+                  <div className={`text-5xl font-black mb-1 ${hcColors.text}`}>{stats?.hcIdeal || 0}</div>
+                  <div className="text-[11px] text-slate-500 font-medium">Vol Diário Ref: {stats?.avgDailyVolLastMonth || 0} tickets</div>
               </div>
 
-              {/* Crescimento */}
               <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm relative overflow-hidden group">
                   <div className="absolute -right-4 -top-4 w-24 h-24 bg-slate-50 rounded-full group-hover:scale-150 transition-transform duration-500 -z-10"></div>
                   <div className="text-slate-400 text-[10px] font-black uppercase tracking-widest flex items-center gap-1 mb-4"><TrendingUp size={14}/> Crescimento (MoM)</div>
-                  <div className="text-5xl font-black text-slate-900 mb-1">{(stats.growth * 100).toFixed(1)}%</div>
+                  <div className="text-5xl font-black text-slate-900 mb-1">{((stats?.growth || 0) * 100).toFixed(1)}%</div>
                   <div className="text-[11px] text-slate-500 font-medium">Taxa composta mensal</div>
               </div>
 
-              {/* Recontato */}
               <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm relative overflow-hidden group">
                   <div className="absolute -right-4 -top-4 w-24 h-24 bg-slate-50 rounded-full group-hover:scale-150 transition-transform duration-500 -z-10"></div>
                   <div className="text-slate-400 text-[10px] font-black uppercase tracking-widest flex items-center gap-1 mb-4"><AlertTriangle size={14}/> Taxa de Recontato</div>
-                  <div className="text-5xl font-black text-slate-900 mb-1">{stats.globalFCR.toFixed(1)}%</div>
+                  <div className="text-5xl font-black text-slate-900 mb-1">{(stats?.globalFCR || 0).toFixed(1)}%</div>
                   <div className="text-[11px] text-slate-500 font-medium">Janela de 14 dias p/ cliente</div>
               </div>
 
-              {/* Distribuição de Equipa */}
               <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm bg-slate-900 text-white">
                   <div className="text-slate-400 text-[10px] font-black uppercase tracking-widest flex items-center gap-1 mb-4"><Layout size={14}/> Equipe Necessária</div>
                   <div className="flex justify-between items-end">
                       <div className="text-center">
-                          <div className="text-2xl font-black text-white">{stats.hcDist.phone}</div>
+                          <div className="text-2xl font-black text-white">{stats?.hcDist?.phone || 0}</div>
                           <div className="text-[9px] uppercase tracking-wider text-slate-500 mt-1"><Headset size={10} className="mx-auto mb-1"/>Voz</div>
                       </div>
                       <div className="text-center border-l border-r border-slate-700 px-4">
-                          <div className="text-2xl font-black text-white">{stats.hcDist.chat}</div>
+                          <div className="text-2xl font-black text-white">{stats?.hcDist?.chat || 0}</div>
                           <div className="text-[9px] uppercase tracking-wider text-slate-500 mt-1"><MousePointer2 size={10} className="mx-auto mb-1"/>Chat</div>
                       </div>
                       <div className="text-center">
-                          <div className="text-2xl font-black text-white">{stats.hcDist.email}</div>
+                          <div className="text-2xl font-black text-white">{stats?.hcDist?.email || 0}</div>
                           <div className="text-[9px] uppercase tracking-wider text-slate-500 mt-1"><Mail size={10} className="mx-auto mb-1"/>Email</div>
                       </div>
                   </div>
               </div>
             </div>
 
-            {/* Gráfico de Área */}
             <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm h-96 flex flex-col">
                 <h3 className="text-lg font-black text-slate-800 mb-6 flex items-center gap-2">Evolução do Volume <span className="text-xs font-normal text-slate-400 bg-slate-100 px-2 py-0.5 rounded">Mês a Mês</span></h3>
                 <div className="flex-1 min-h-0">
                     <ResponsiveContainer width="100%" height="100%">
-                        <AreaChart data={stats.monthlyTrend} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                        <AreaChart data={stats?.monthlyTrend || []} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                             <defs>
                                 <linearGradient id="colorVol" x1="0" y1="0" x2="0" y2="1">
                                 <stop offset="5%" stopColor="#4F46E5" stopOpacity={0.3}/>
@@ -602,30 +578,28 @@ export default function App() {
                             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9"/>
                             <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{fontSize: 12, fill: '#64748b'}} />
                             <YAxis axisLine={false} tickLine={false} tick={{fontSize: 12, fill: '#64748b'}} />
-                            <RechartsTooltip content={<CustomTooltip />} cursor={{ stroke: '#cbd5e1', strokeWidth: 1, strokeDasharray: '4 4' }} />
+                            <RechartsTooltip content={(props: any) => <CustomTooltip {...props} />} cursor={{ stroke: '#cbd5e1', strokeWidth: 1, strokeDasharray: '4 4' }} />
                             <Area type="monotone" dataKey="volume" name="Tickets" stroke="#4F46E5" strokeWidth={3} fillOpacity={1} fill="url(#colorVol)" />
                         </AreaChart>
                     </ResponsiveContainer>
                 </div>
             </div>
 
-            {/* Gráfico de Linha */}
             <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm h-96 flex flex-col">
                 <h3 className="text-lg font-black text-slate-800 mb-6 flex items-center gap-2">Taxa de Recontato (FCR) <span className="text-xs font-normal text-slate-400 bg-slate-100 px-2 py-0.5 rounded">% Mensal</span></h3>
                 <div className="flex-1 min-h-0">
                     <ResponsiveContainer width="100%" height="100%">
-                        <LineChart data={stats.fcrTrend} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                        <LineChart data={stats?.fcrTrend || []} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9"/>
                             <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{fontSize: 12, fill: '#64748b'}} />
                             <YAxis axisLine={false} tickLine={false} tick={{fontSize: 12, fill: '#64748b'}} tickFormatter={(v) => `${v}%`} />
-                            <RechartsTooltip content={<CustomTooltip />} cursor={{ stroke: '#cbd5e1', strokeWidth: 1, strokeDasharray: '4 4' }} />
+                            <RechartsTooltip content={(props: any) => <CustomTooltip {...props} />} cursor={{ stroke: '#cbd5e1', strokeWidth: 1, strokeDasharray: '4 4' }} />
                             <Line type="monotone" dataKey="rate" name="Recontato (%)" stroke="#334155" strokeWidth={3} dot={{r: 4, fill: '#334155', strokeWidth: 2, stroke: '#fff'}} />
                         </LineChart>
                     </ResponsiveContainer>
                 </div>
             </div>
 
-            {/* Gráfico Circular */}
             <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm h-[500px] flex flex-col">
                 <div className="flex justify-between items-start mb-2">
                     <div>
@@ -659,13 +633,12 @@ export default function App() {
                                     <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} className="hover:opacity-80 transition-opacity" />
                                 ))}
                             </Pie>
-                            <RechartsTooltip content={<CustomTooltip />} />
+                            <RechartsTooltip content={(props: any) => <CustomTooltip {...props} />} />
                         </PieChart>
                     </ResponsiveContainer>
                 </div>
             </div>
 
-            {/* Mapa de Calor */}
             <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm h-[450px] flex flex-col overflow-hidden">
                   <h3 className="text-lg font-black text-slate-800 mb-1">Mapa de Calor (Concentração de Volume)</h3>
                   <p className="text-xs text-slate-500 mb-6">Dias da Semana vs. Horas do Dia. Identifique picos térmicos para elaboração de escalas.</p>
@@ -684,11 +657,11 @@ export default function App() {
                               <div key={day} className="flex items-center h-8">
                                   <div className="w-12 text-[10px] font-black text-slate-600 uppercase text-right pr-3">{day}</div>
                                   <div className="flex flex-1 gap-1 h-full">
-                                      {stats.heatmapGrid[dIdx].map((val, hIdx) => (
+                                      {stats?.heatmapGrid?.[dIdx]?.map((val: number, hIdx: number) => (
                                           <div 
                                             key={hIdx} 
                                             className="flex-1 rounded-sm relative group cursor-crosshair transition-all hover:ring-2 hover:ring-slate-900 hover:z-10"
-                                            style={{ backgroundColor: getHeatmapColor(val, stats.maxHeatmapVal) }}
+                                            style={{ backgroundColor: getHeatmapColor(val, stats?.maxHeatmapVal || 0) }}
                                           >
                                             <div className="absolute opacity-0 group-hover:opacity-100 bottom-full left-1/2 -translate-x-1/2 mb-2 bg-slate-900 text-white text-[10px] font-bold py-1 px-2 rounded whitespace-nowrap pointer-events-none z-50">
                                                 {day}, {hIdx}h: {val} contatos
@@ -711,7 +684,6 @@ export default function App() {
                   </div>
             </div>
 
-            {/* RELATÓRIO ESTRATÉGICO IA */}
             <div id="ai-report-section" className="bg-slate-900 rounded-[2.5rem] p-8 md:p-12 text-white shadow-xl mt-4 relative overflow-hidden">
                 <div className="absolute -right-20 -top-20 opacity-10 pointer-events-none rotate-12 scale-150">
                     <Sparkles size={400} />
