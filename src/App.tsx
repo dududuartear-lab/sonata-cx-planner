@@ -390,7 +390,7 @@ Seja direto e executivo. Não use saudações, não nomeie empresa ou pessoa —
 1. Abra analisando o cenário de dimensionamento: compare HC Atual vs Ideal, mostre a distribuição por canal e explique em uma frase como o TMA afeta o HC (sem detalhar o cálculo — o disclaimer já explica).
 2. Analise os canais ativos. Cada canal tem uma frase sobre sua peculiaridade: e-mail (eficiência em lote vs. complexidade dependendo do processo), chat (simultaneidade vs. tempo de resposta do cliente), telefone (custo unitário alto, 1 analista por atendimento). Finalize comentando que o mix de canais é uma decisão estratégica.
 3. Aplique SOMENTE UM dos cenários abaixo, conforme os números:
-   - SE HC Ideal > (Atual × 1.15): recomendar automação/self-service (Tier 0/1) antes de contratar. Tecnologia: cara e demorada, mas altamente escalável. Processos: rápidos e razoavelmente escaláveis. Contratação: lenta e pouco escalável.
+   - SE HC Ideal > (Atual × 1.15): recomendar automação e canais de autoatendimento (chatbot, FAQ interativo, base de conhecimento pública) antes de contratar. Tecnologia: cara e demorada, mas altamente escalável. Processos: rápidos e razoavelmente escaláveis. Contratação: lenta e pouco escalável.
    - SE HC Atual > HC Ideal E Crescimento > 10%: questionar se há justificativa para o excesso (crescimento acelerado previsto?), estimar quando o volume tornará o time insuficiente e reforçar que é o momento ideal para CSAT, NPS e qualidade.
    - SE HC Atual muito acima do HC Ideal (>15%): apontar como ponto de atenção e sugerir revisão das funções dos analistas.
    - SE equilibrado E Crescimento < 10%: foco em qualidade, processos e redução de TMA.
@@ -743,8 +743,8 @@ Seja direto e executivo. Não use saudações, não nomeie empresa ou pessoa —
             </div>
 
             {/* ── Evolução do Volume por Canal ─────────────────── */}
-            <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm h-96 flex flex-col">
-              <div className="flex items-start justify-between mb-6">
+            <div id="chart-volume" className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
+              <div className="flex items-start justify-between mb-4">
                 <h3 className="text-lg font-black text-slate-800 flex items-center gap-2">
                   Evolução do Volume <span className="text-xs font-normal text-slate-400 bg-slate-100 px-2 py-0.5 rounded">Mês a Mês</span>
                 </h3>
@@ -754,8 +754,8 @@ Seja direto e executivo. Não use saudações, não nomeie empresa ou pessoa —
                   <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-sm inline-block" style={{background:CHANNEL_COLORS.email}}/>E-mail</span>
                 </div>
               </div>
-              <div className="flex-1 min-h-0">
-                <ResponsiveContainer width="100%" height="100%">
+              <div style={{height:300}}>
+                <ResponsiveContainer width="100%" height={300}>
                   <AreaChart data={s.monthlyTrend} margin={{top:10,right:10,left:-20,bottom:0}}>
                     <defs>
                       <linearGradient id="gTel"  x1="0" y1="0" x2="0" y2="1"><stop offset="5%"  stopColor={CHANNEL_COLORS.telefone} stopOpacity={0.9}/><stop offset="95%" stopColor={CHANNEL_COLORS.telefone} stopOpacity={0.6}/></linearGradient>
@@ -824,12 +824,12 @@ Seja direto e executivo. Não use saudações, não nomeie empresa ou pessoa —
             )}
 
             {/* ── Taxa de Recontato ─────────────────────────────── */}
-            <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm h-96 flex flex-col">
-              <h3 className="text-lg font-black text-slate-800 mb-6 flex items-center gap-2">
+            <div id="chart-fcr" className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
+              <h3 className="text-lg font-black text-slate-800 mb-4 flex items-center gap-2">
                 Taxa de Recontato (FCR) <span className="text-xs font-normal text-slate-400 bg-slate-100 px-2 py-0.5 rounded">% Mensal</span>
               </h3>
-              <div className="flex-1 min-h-0">
-                <ResponsiveContainer width="100%" height="100%">
+              <div style={{height:280}}>
+                <ResponsiveContainer width="100%" height={280}>
                   <LineChart data={s.fcrTrend} margin={{top:10,right:10,left:-20,bottom:0}}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9"/>
                     <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{fontSize:12,fill:'#64748b'}}/>
@@ -842,7 +842,7 @@ Seja direto e executivo. Não use saudações, não nomeie empresa ou pessoa —
             </div>
 
             {/* ── Distribuição de Demanda ───────────────────────── */}
-            <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm h-[500px] flex flex-col">
+            <div id="chart-pie" className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
               <div className="flex justify-between items-start mb-2">
                 <div>
                   <h3 className="text-lg font-black text-slate-800 leading-tight">Distribuição de Demanda</h3>
@@ -856,8 +856,8 @@ Seja direto e executivo. Não use saudações, não nomeie empresa ou pessoa —
                   </button>
                 )}
               </div>
-              <div className="flex-1 min-h-0 relative">
-                <ResponsiveContainer width="100%" height="100%">
+              <div style={{height:400}}>
+                <ResponsiveContainer width="100%" height={400}>
                   <PieChart>
                     <Pie data={currentPieData} innerRadius={100} outerRadius={160} paddingAngle={2} dataKey="value"
                       onClick={handlePieClick as any}
@@ -957,7 +957,9 @@ Seja direto e executivo. Não use saudações, não nomeie empresa ou pessoa —
               <div className="absolute -right-20 -top-20 opacity-10 pointer-events-none rotate-12 scale-150"><Sparkles size={400}/></div>
               <div className="relative z-10">
                 <div className="flex items-center gap-4 mb-10 border-b border-white/10 pb-6">
-                  <div className="bg-indigo-500 p-4 rounded-2xl text-white shadow-lg shadow-indigo-500/30"><Sparkles size={28}/></div>
+                  <div className="bg-white p-2 rounded-2xl shadow-md flex items-center justify-center" style={{width:56,height:56}}>
+                    <img src="/logo-parecer.png" alt="Sonata CX" className="w-full h-full object-contain rounded-xl"/>
+                  </div>
                   <div>
                     <h3 className="text-3xl font-black tracking-tight text-white">Parecer Estratégico WFM</h3>
                     <p className="text-indigo-400 text-sm font-bold uppercase tracking-widest mt-1">Sonata.cx • Powered by AI</p>
@@ -1007,29 +1009,30 @@ Seja direto e executivo. Não use saudações, não nomeie empresa ou pessoa —
         .custom-scrollbar::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:10px;}
         .custom-scrollbar::-webkit-scrollbar-thumb:hover{background:#94a3b8;}
         @media print{
-          aside,button{display:none!important;}
-          main{padding:0;width:100%;max-width:100%;background:white;}
+          * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+          aside, button { display: none !important; }
+          main { padding: 0 !important; width: 100% !important; max-width: 100% !important; background: white !important; }
 
-          /* Garante que todos os cards de gráfico não sejam cortados */
-          main > div > div > div {
-            break-inside: avoid;
-            page-break-inside: avoid;
-          }
+          /* Cada card: não quebra no meio */
+          .space-y-8 > * { break-inside: avoid; page-break-inside: avoid; margin-bottom: 1.5rem; }
+
+          /* Recharts: força largura total nos SVGs */
+          .recharts-wrapper, .recharts-surface { width: 100% !important; }
 
           /* Heatmap: remove scroll e mostra tudo */
-          #chart-heatmap { overflow: visible !important; height: auto !important; }
-          #chart-heatmap > div { max-height: none !important; overflow: visible !important; }
-          #chart-heatmap > div > div { min-width: auto !important; }
+          #chart-heatmap .custom-scrollbar { overflow: visible !important; max-height: none !important; }
+          #chart-heatmap .custom-scrollbar > div { min-width: auto !important; }
 
-          /* Gráfico de barras por hora: garante altura explícita */
-          #chart-hourly { page-break-inside: avoid; break-inside: avoid; }
-          #chart-hourly > div[style] { height: 340px !important; }
+          /* Notas sobre escala */
+          .bg-indigo-50 { background-color: #eef2ff !important; }
 
-          /* Seção de notas: mantém legível */
-          .bg-indigo-50 { background-color: #eef2ff !important; border-color: #c7d2fe !important; }
-
-          #ai-report-section{background:white!important;color:black!important;box-shadow:none!important;margin-top:2rem;}
-          #ai-report-section *{color:black!important;border-color:#e2e8f0!important;}
+          /* Parecer AI: fundo branco, sem espaço extra no topo */
+          #ai-report-section {
+            background: white !important; color: black !important;
+            box-shadow: none !important; margin-top: 0 !important; padding-top: 1rem !important;
+          }
+          #ai-report-section * { color: black !important; border-color: #e2e8f0 !important; }
+          #ai-report-section .absolute { display: none !important; }
         }
       `}}/>
     </div>
