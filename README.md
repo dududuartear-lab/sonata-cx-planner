@@ -20,9 +20,9 @@ In high-complexity and hyper-growth environments, Workforce Management (WFM) oft
 
 The Sonata CX Capacity Planner addresses this pain point by providing an "Analytics Cockpit" for support managers. It enables autonomous, complex analyses—such as First Contact Resolution (FCR) rates and thermal peak identification—allowing for data-driven workforce sizing through a simplified data ingestion process.
 
-🚀 **Version 6.0: Enhanced Operational Logic**
+🚀 **Version 4.9: Enhanced Operational Logic**
 
-The core update in version 6.0 is the introduction of the Custom Operational Window Engine, which shifts the tool from generic calculations to business-specific modeling.
+The core update in version 4.9 is the introduction of the Custom Operational Window Engine, which shifts the tool from generic calculations to business-specific modeling.
 
 Operating Days: Granular selection of active operational days (e.g., Monday to Friday).
 
