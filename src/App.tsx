@@ -8,16 +8,36 @@ import {
 import { 
   Users, TrendingUp, AlertTriangle, Sparkles, 
   Building2, Timer, FileText, Layout, Headset, MousePointer2, 
-  Mail, ArrowLeft, Download, FileDown
+  Mail, ArrowLeft, Download, FileDown, Clock
 } from 'lucide-react';
 
 /**
- * SONATA CX CAPACITY PLANNER - v4.8 (Titanium Vercel Build)
- * Código tipado e blindado contra as regras estritas (noImplicitAny / strictNullChecks) do compilador do Vercel.
+ * SONATA CX CAPACITY PLANNER - v4.9
+ * Adicionado: configuração de dias e horários de operação.
  */
 
 const CHART_COLORS = ['#4F46E5', '#818CF8', '#C7D2FE', '#312E81', '#6366F1', '#4338CA', '#1E1B4B', '#A5B4FC'];
 const WEEKDAYS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+
+// Nomes curtos dos dias para os botões de seleção (mesma ordem: 0=Dom ... 6=Sáb)
+const DAY_LABELS = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'];
+const DAY_FULL   = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+
+/**
+ * Conta quantos dias de operação existem dentro de um determinado mês.
+ * @param yearMonth  Formato "YYYY-MM"
+ * @param operationDays  Array de índices de dias da semana (0=Dom, 6=Sáb)
+ */
+function countWorkingDaysInMonth(yearMonth: string, operationDays: number[]): number {
+  const [year, month] = yearMonth.split('-').map(Number);
+  const daysInMonth = new Date(year, month, 0).getDate();
+  let count = 0;
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dayOfWeek = new Date(year, month - 1, d).getDay();
+    if (operationDays.includes(dayOfWeek)) count++;
+  }
+  return Math.max(count, 1); // evita divisão por zero
+}
 
 interface TicketData {
   id_ticket?: string;
@@ -39,6 +59,11 @@ interface ConfigState {
   teamSize: number | string;
   shiftHours: number | string;
   breakMinutes: number | string;
+  // Dias de operação: array de índices (0=Dom, 1=Seg ... 6=Sáb)
+  operationDays: number[];
+  // Horário de operação
+  operationStartHour: number | string;
+  operationEndHour: number | string;
   phoneAHT: number | string;
   phoneTMEFirst: number | string;
   chatAHT: number | string;
@@ -53,6 +78,7 @@ interface ConfigState {
 interface StatsType {
   total: number;
   avgDailyVolLastMonth: number;
+  workingDaysInLastMonth: number;
   growth: number;
   monthlyTrend: { month: string; volume: number }[];
   globalFCR: number;
@@ -68,6 +94,7 @@ interface StatsType {
 const defaultStats: StatsType = {
   total: 0,
   avgDailyVolLastMonth: 0,
+  workingDaysInLastMonth: 0,
   growth: 0,
   monthlyTrend: [],
   globalFCR: 0,
@@ -82,7 +109,8 @@ const defaultStats: StatsType = {
 
 export default function App() {
   
-const apiKey = import.meta.env.VITE_SONATA_API;
+  // CORREÇÃO: variável renomeada de "apikey" para "apiKey" (consistente com uso na linha do fetch)
+  const apiKey = import.meta.env.VITE_SONATA_API;
   
   const [rawData, setRawData] = useState<TicketData[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
@@ -96,6 +124,10 @@ const apiKey = import.meta.env.VITE_SONATA_API;
     teamSize: 50,
     shiftHours: 8, 
     breakMinutes: 60,
+    // Padrão: segunda a sexta (1, 2, 3, 4, 5)
+    operationDays: [1, 2, 3, 4, 5],
+    operationStartHour: 8,
+    operationEndHour: 18,
     phoneAHT: 5,
     phoneTMEFirst: 4, 
     chatAHT: 4,
@@ -106,6 +138,17 @@ const apiKey = import.meta.env.VITE_SONATA_API;
     emailTMEFirst: 24, 
     emailSLAReopen: 24 
   });
+
+  // Alterna a seleção de um dia de operação
+  const toggleOperationDay = (dayIndex: number) => {
+    const current = config.operationDays;
+    const updated = current.includes(dayIndex)
+      ? current.filter((d: number) => d !== dayIndex)
+      : [...current, dayIndex].sort((a: number, b: number) => a - b);
+    // Garante que ao menos 1 dia esteja selecionado
+    if (updated.length === 0) return;
+    setConfig({ ...config, operationDays: updated });
+  };
 
   const handleDownloadTemplate = () => {
     const csvContent = "id_ticket;data_hora_entrada;client_id;canal;assunto;motivo\n" +
@@ -220,7 +263,9 @@ const apiKey = import.meta.env.VITE_SONATA_API;
     const safeBreakMinutes = Number(config.breakMinutes) || 0;
     const netWorkSec = Math.max(1, (safeShiftHours * 3600) - (safeBreakMinutes * 60));
 
-    const avgDailyVolLastMonth = lastMonthData.length / 30; 
+    // ALTERAÇÃO: usa dias de operação configurados em vez de dividir por 30 fixo
+    const workingDaysInLastMonth = countWorkingDaysInMonth(lastMonthKey, config.operationDays);
+    const avgDailyVolLastMonth = lastMonthData.length / workingDaysInLastMonth;
     
     const pPhone = lastMonthChannels.telefone / lastMonthData.length || 0;
     const pChat = lastMonthChannels.chat / lastMonthData.length || 0;
@@ -285,6 +330,7 @@ const apiKey = import.meta.env.VITE_SONATA_API;
     return { 
       total: rawData.length, 
       avgDailyVolLastMonth: Math.round(avgDailyVolLastMonth),
+      workingDaysInLastMonth,
       growth, 
       monthlyTrend,
       globalFCR,
@@ -330,6 +376,8 @@ const apiKey = import.meta.env.VITE_SONATA_API;
     setIsReportGenerated(true); 
     setIsAiLoading(true);
     
+    const operationDaysLabel = config.operationDays.map((d: number) => DAY_FULL[d]).join(', ');
+    
     const prompt = `
     [INSTRUÇÃO DE SISTEMA]: Você é um consultor sênior escrevendo um parecer executivo direto. Use formatação Markdown.
 
@@ -342,6 +390,10 @@ const apiKey = import.meta.env.VITE_SONATA_API;
     - Headcount Ideal Projetado (Mês Recente): ${s.hcIdeal} analistas.
     - Crescimento Mensal Médio: ${(s.growth * 100).toFixed(1)}%
     - Taxa de Recontato (14 dias): ${(s.globalFCR).toFixed(1)}%
+    - Dias de Operação: ${operationDaysLabel}
+    - Horário de Operação: ${config.operationStartHour}h às ${config.operationEndHour}h
+    - Dias úteis no último mês analisado: ${s.workingDaysInLastMonth}
+    - Volume Médio Diário (dias de operação): ${s.avgDailyVolLastMonth} tickets/dia
 
     REGRAS:
     1. Baseie-se nas médias históricas apontadas.
@@ -431,7 +483,7 @@ const apiKey = import.meta.env.VITE_SONATA_API;
              <img src="/logo-branca.png" alt="Sonata CX Logo" className="w-8 h-8 object-contain" />
           </div>
           <h1 className="text-2xl font-black text-slate-900 tracking-tight">sonata.cx <span className="text-indigo-600 italic">lab</span></h1>
-          <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Capacity Planner v4.8</p>
+          <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Capacity Planner v4.9</p>
         </div>
 
         <div className="space-y-8 flex-1">
@@ -470,6 +522,80 @@ const apiKey = import.meta.env.VITE_SONATA_API;
               <input type="number" className="text-right text-lg font-black w-20 bg-transparent outline-none text-indigo-600" value={config.breakMinutes} onChange={(e: any) => setConfig({...config, breakMinutes: e.target.value === '' ? '' : parseInt(e.target.value)})}/>
             </div>
           </section>
+
+          {/* ─────────────────────────────────────────────────
+              NOVA SEÇÃO: Horário de Operação
+          ───────────────────────────────────────────────── */}
+          <section className="space-y-4">
+            <h3 className="text-sm font-black text-slate-600 uppercase tracking-widest flex items-center gap-2">
+              <Clock size={16}/> Horário de Operação
+            </h3>
+
+            {/* Seleção de dias */}
+            <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200">
+              <label className="text-[10px] font-bold text-slate-500 uppercase block mb-3">Dias de Funcionamento</label>
+              <div className="flex gap-1 justify-between">
+                {DAY_LABELS.map((label: string, idx: number) => {
+                  const isActive = config.operationDays.includes(idx);
+                  return (
+                    <button
+                      key={idx}
+                      onClick={() => toggleOperationDay(idx)}
+                      className={`flex-1 py-2 rounded-xl text-xs font-black transition-all ${
+                        isActive
+                          ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200'
+                          : 'bg-white border border-slate-200 text-slate-400 hover:border-indigo-300'
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  );
+                })}
+              </div>
+              <p className="text-[10px] text-slate-400 mt-2">
+                {config.operationDays.length === 7
+                  ? 'Operação 7 dias por semana'
+                  : `${config.operationDays.length} dia(s) por semana`}
+              </p>
+            </div>
+
+            {/* Horário de início e fim */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200">
+                <label className="text-[10px] font-bold text-slate-500 uppercase block mb-1">Início (hora)</label>
+                <input
+                  type="number"
+                  min={0}
+                  max={23}
+                  className="text-xl font-black w-full bg-transparent outline-none text-indigo-600"
+                  value={config.operationStartHour}
+                  onChange={(e: any) => {
+                    const val = Math.min(23, Math.max(0, parseInt(e.target.value) || 0));
+                    setConfig({ ...config, operationStartHour: val });
+                  }}
+                />
+                <span className="text-[10px] text-slate-400">ex: 8 = 08h00</span>
+              </div>
+              <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200">
+                <label className="text-[10px] font-bold text-slate-500 uppercase block mb-1">Fim (hora)</label>
+                <input
+                  type="number"
+                  min={1}
+                  max={24}
+                  className="text-xl font-black w-full bg-transparent outline-none text-indigo-600"
+                  value={config.operationEndHour}
+                  onChange={(e: any) => {
+                    const val = Math.min(24, Math.max(1, parseInt(e.target.value) || 18));
+                    setConfig({ ...config, operationEndHour: val });
+                  }}
+                />
+                <span className="text-[10px] text-slate-400">ex: 18 = 18h00</span>
+              </div>
+            </div>
+          </section>
+          {/* ─────────────────────────────────────────────────
+              FIM NOVA SEÇÃO
+          ───────────────────────────────────────────────── */}
 
           <section className="space-y-5">
              <h3 className="text-sm font-black text-slate-600 uppercase tracking-widest flex items-center gap-2"><Timer size={16}/> Performance e Metas</h3>
@@ -597,6 +723,7 @@ const apiKey = import.meta.env.VITE_SONATA_API;
                   </div>
                   <div className={`text-5xl font-black mb-1 ${hcColors.text}`}>{s.hcIdeal}</div>
                   <div className="text-[11px] text-slate-500 font-medium">Vol Diário Ref: {s.avgDailyVolLastMonth} tickets</div>
+                  <div className="text-[10px] text-slate-400 mt-1">{s.workingDaysInLastMonth} dias úteis no mês</div>
               </div>
 
               <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm relative overflow-hidden group">
