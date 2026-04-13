@@ -1,101 +1,94 @@
-📊 Sonata CX Capacity Planner & Analytics Hub
+📊 **Sonata CX Capacity Planner & Analytics Hub**
 
-🌐 **Live Demo & Testing**
+🌐 Live Demo & Testing
 
 To see the dashboard in action, check out the live link below:
 
-Live Demo: https://sonata-cx-planner.vercel.app/
+**Live Demo: https://sonata-cx-planner.vercel.app/**
 
-**Frictionless Testing (Built-in Template):** Understanding that the primary users of this tool (CX professionals and operational managers) might not be familiar with navigating GitHub repositories, I implemented a dynamic "Download Sample Template" button directly on the app's upload screen. This allows any user to instantly download a properly formatted .csv test file, test the dashboard's capabilities, and understand the required data structure with absolutely zero friction.
+Seamless Onboarding (Built-in Template): To ensure a smooth experience for CX professionals and operational managers, I implemented a "Download Sample Template" feature directly on the upload screen. This allows users to instantly download a properly formatted .csv file, enabling immediate validation of the dashboard's analytical engine and data requirements with minimal friction.
 
-**Full Realistic Dataset: For a deep dive into the dashboard's analytical power, use the input_tickets_delivery.csv file available in this repository.**
+Full Realistic Dataset: For a comprehensive evaluation of the tool's processing power and KPI accuracy, use the input_tickets_delivery.csv file available in this repository.
 
-⚠️ **SECURITY & PRIVACY DISCLAIMER (GDPR/LGPD):** > This tool does not store any data. All mathematical processing and data parsing occur entirely locally within your browser (Client-side). However, do not upload databases containing real PII (Personally Identifiable Information). The aggregated indicators (numbers and KPIs) are transmitted to an external Artificial Intelligence API (Google Gemini) to generate the strategic report. Always ensure that sensitive columns like client_id, names, emails, and social security numbers (CPFs) are heavily masked or anonymized before uploading your CSV.
+⚠️ **SECURITY & PRIVACY (GDPR/LGPD): This tool operates entirely on the client-side; no data is stored or processed on external servers. All mathematical parsing occurs within the browser. However, aggregated KPIs (non-PII) are transmitted to the Google Gemini API to generate strategic insights. Always ensure that sensitive columns such as names, emails, and IDs are masked or anonymized before uploading your CSV.**
 
-🏢 **Project Context & Origin (The Business Value)**
+🏢 **Project Context & Strategic Value**
 
-This project was designed not merely as a coding exercise, but as a systemic solution to a classic Customer Experience (CX) bottleneck.
+This project was developed as a systemic solution to a recurring bottleneck in Customer Experience (CX) operations.
 
-Throughout my career managing high-complexity and hyper-growth operations, the challenge of Workforce Management (WFM) has always been glaring: CX teams often rely heavily on Data Engineers to translate raw support logs into actionable Ideal Headcount and shift scheduling.
+In high-complexity and hyper-growth environments, Workforce Management (WFM) often faces a significant challenge: the heavy dependency on Data Engineering teams to translate raw support logs into actionable headcount planning and shift scheduling.
 
-The Sonata CX Capacity Planner try to solve this pain point. It acts as an "Analytics Cockpit" that empowers support managers, allowing them to perform complex analyses, evaluate First Contact Resolution (FCR) rates, understand hourly bottlenecks (Thermal Heatmaps), and instantly size their required workforce using nothing more than a simple CSV upload.
+The Sonata CX Capacity Planner addresses this pain point by providing an "Analytics Cockpit" for support managers. It enables autonomous, complex analyses—such as First Contact Resolution (FCR) rates and thermal peak identification—allowing for data-driven workforce sizing through a simplified data ingestion process.
 
-🚀 **What's New in Version 6.0?**
+🚀 **Version 6.0: Enhanced Operational Logic**
 
-The most significant milestone of this version is the introduction of the Custom Operational Window Engine.
+The core update in version 6.0 is the introduction of the Custom Operational Window Engine, which shifts the tool from generic calculations to business-specific modeling.
 
-In previous iterations, the tool calculated headcount needs based on a default 24/7 operational assumption. In version 6.0, the user now has total granular control over:
+Operating Days: Granular selection of active operational days (e.g., Monday to Friday).
 
-  **Operating Days:** Specific selection of which days of the week the operation is active (e.g., Monday to Friday only).
+Operating Hours: Precise definition of service start and end times.
 
-  **Operating Hours:** Exact definition of start and end times for the service window.
+Business Impact: This update ensures that the Ideal Headcount is calculated based on actual business availability. By concentrating demand within active service windows rather than diluting it over a theoretical 24/7 cycle, the tool provides a realistic view of staffing gaps and surpluses.
 
-**Business Impact:** This shift allows the tool to calculate the Ideal Headcount with surgical precision. Instead of diluting the workload across 24 hours or 7 days, the math now concentrates the demand only within the periods the team is actually logged in, providing a realistic view of staffing gaps and surplus.
+🐍 **Data Engineering & Simulation (The Python Pipeline)**
 
-🐍 **Data Engineering & Realistic Simulation (The Python Pipeline)**
+In real-world CX scenarios, data is rarely pristine. To validate the tool under high-growth conditions while adhering to privacy standards, I developed a robust synthetic data pipeline.
 
-In real-world CX operations, you rarely get perfectly clean data handed to you. To simulate a genuine hyper-growth scenario while strictly adhering to data privacy standards (preventing the use of actual customer PII), I needed a robust dataset to test this tool.
+The script input_tickets_delivery.py programmatically generates a realistic dataset (input_tickets_delivery.csv) that mimics the complexities of a large-scale operation:
 
-Instead of manually mocking a few rows, I developed a Python script (input_tickets_delivery.py) included in this repository. This script programmatically generates a highly realistic dataset (input_tickets_delivery.csv) that mimics the chaotic distribution of a real operation:
+Weighted Distribution: Simulates realistic contact volumes across various channels (Phone, Email, Chat) and subjects (Logistics, Payments, etc.).
 
-**Dynamic Volume & Distribution:** It simulates daily contact volumes utilizing weighted randomizations for channels (Phone, Email, Chat) and subjects (Logistics, Payments, etc.).
+Recurrence Modeling: Artificially generates a percentage of "recontacts" by assigning the same client_id to multiple tickets within a 14-day window, stress-testing the FCR (First Contact Resolution) mathematical models.
 
-**Recurrence Engine:** It artificially creates a percentage of "recontacts" (assigning the same client_id to multiple tickets within a 14-day window) to accurately stress-test the FCR (First Contact Resolution) mathematical models in the React dashboard.
+Data Normalization: Handles string standardization and text cleaning to ensure high data integrity for the frontend application.
 
-**Data Sanitization:** It automatically handles text normalization (removing accents, standardizing strings) to ensure the frontend receives clean, predictable data.
+This script demonstrates an end-to-end product skill: identifying a data gap, engineering a backend solution to fill it, and successfully integrating it into the final product.
 
-Building this script demonstrates a critical end-to-end product management skill: identifying a missing variable (usable, scale-testing data), engineering a backend solution to generate it, and then successfully feeding it into the frontend application.
+🛠️ **Strategic Problem-Solving Framework**
 
-🛠️ **The Strategic Problem-Solving Framework**
+The application's calculation engine is guided by industry best practices and operational logic:
 
-The calculation engine of this application reflects deep analytical and operational knowledge, guided by market best practices:
+Operational Scoping: Users can configure business rules such as Average Handle Time (AHT), Average Wait Time (AWT), Chat Concurrency, and productivity deductions (including mandatory ergonomic breaks under Brazilian NR-17).
 
-**Operational Scope Definition:** The user configures their specific business rules, defining Average Handle Time (AHT), Average Wait Time (AWT), Chat Concurrency, and vital deductions (such as mandatory ergonomic breaks mandated by Brazilian NR-17 labor laws).
+"Snapshot" Headcount: The algorithm calculates the FTE (Full-Time Equivalent) based on the most recent data trends, ensuring that scaling decisions are based on current demand rather than outdated historical averages.
 
-**The "Snapshot" (Smart Headcount):** The mathematical algorithm was designed to calculate the FTE (Full-Time Equivalent) strictly based on the most recent month in the dataset. Fast-growing operations shouldn't size their current teams based on volume from 6 months ago; they must address the present bottleneck.
+Resolutivity Analysis (FCR): The system cross-references client_id and subjects to flag friction points and deduce resolution effectiveness.
 
-**Recontact Visibility (FCR):** The application scans and cross-references client_id + subject, flagging repeated contacts within a 14-day window to deduce resolution friction (FCR).
+Analytical Heatmap: Utilizing a continuous HSL gradient, the dashboard identifies hourly peaks, providing clear visibility for shift optimization and break planning.
 
-**Actionable Heatmap:** Going beyond "pretty charts," the app utilizes a thermal map (continuous HSL gradient) crossing days of the week vs. hours of the day. The business goal is crystal clear: identifying absolute hourly peaks to accurately allocate shifts and breaks.
+Synthetic Advisor (AI): Integrated via Prompt Engineering with Google Gemini. The tool subjects KPIs to structured business rules, providing strategic recommendations (e.g., prioritizing automation over hiring when headcount gaps exceed specific thresholds).
 
-**Synthetic Advisor (AI):** Integrated via Prompt Engineering with Google Gemini. The code submits the KPIs to strict business rules (e.g., "If the ideal headcount is 15% higher than the current one, strongly suggest investing in self-service and automation (Tier 1) rather than just mass hiring").
+🚀 **AI-Assisted Development & Methodology**
 
-🚀 **The "Vibecoding" Journey: From Concept to Production**
+The development of this React and Python ecosystem utilized an "AI-Augmented" product methodology. Acting as the Product Lead and Technical Architect, I leveraged generative AI to materialize complex business requirements into a functional software architecture:
 
-The most compelling aspect of this project is its methodology. This complex React and Python ecosystem was developed without me typing a single line of traditional source code. As a Business and Product professional (not a Software Engineer), I took on the role of Product Manager / Tech Lead, leveraging Generative AI and the Vibecoding technique to materialize my mental architecture into functional software:
+Requirement Engineering: I defined the technical scope, providing the AI with exact mathematical formulas for workload and shrinkage logic.
 
-**Requirements Architecture (Prompt Engineering):** The project began with a rigorous technical scope. I instructed the AI with exact mathematical specifications (Workload formulas, shrinkage deductions) and Python generation logics that would form the core business engine.
+Resilient Troubleshooting: I managed the technical infrastructure, debugging build logs and resolving deployment hurdles related to CORS, TypeScript typings, and API versioning during the Vercel integration.
 
-**Advanced Troubleshooting & Resilience:** The biggest challenge wasn't generating the UI, but mastering the infrastructure. When facing roadblocks in the StackBlitz/Vite environment—such as CORS blocks, strict TypeScript compiler rejections (TS2739, TS18047) during the Vercel deployment, and API version deprecations (models/gemini is not found)—I relied on my analytical framework. Instead of freezing, I read terminal build logs, formulated highly contextual questions, and guided the AI to refactor root configuration files and apply strict typings (interface StatsType), successfully debugging the CI/CD pipeline.
+User-Centric Refinement: I iterated on the UI/UX to ensure a premium experience, moving from basic visualizations to fluid linear interpolations and implementing the dynamic CSV template generator to reduce user friction.
 
-**Leading the AI:** I treated the AI as a junior developer. When code snippets failed or environments crashed, I provided exact feedback loops, steering the technology back on track to solve structural and deployment issues.
+⏱️ Time-to-Value: This functional MVP was developed in approximately 8 hours. It stands as a testament to how rapid prototyping, combined with strong product management fundamentals, can leverage AI to deliver immediate business value and solve real-world operational problems.
 
-**UX/UI Refinement & User Friction:** I refused to accept "standard, out-of-the-box charts." I demanded iterations focused on the end-user. I forced the transition from basic bichromatic heatmaps to fluid linear interpolations (HSL). Furthermore, identifying that relying on static files in GitHub repos creates friction for non-technical users, I directed the AI to generate a dynamic, in-browser CSV template generator, ensuring any CX professional could test the tool instantly.
+💻 **Tech Stack**
 
-⏱️ **Time-to-Value & The No-Code Milestone:** It is worth highlighting that this entire functional MVP was built from scratch in approximately 6 hours of dedicated work. While I acknowledge that any software has room for future enhancements and optimizations, going from a blank slate to a fully usable, complex enterprise tool without writing a single line of code is a significant achievement. It demonstrates how rapid prototyping and strong product management fundamentals can leverage AI to deliver immediate business value and solve real-world problems.
+Data Engineering: Python (Pandas, Numpy).
 
-The result is an Enterprise-Grade application that not only functions flawlessly in production but perfectly adheres to strict business rules and CX user experience standards.
+Frontend: React.js + TypeScript (for type-safety and scalability).
 
-💻 **Tech Stack & Justification**
+Styling: Tailwind CSS.
 
-Data Engineering: Python (pandas, numpy) for generating and sanitizing realistic synthetic datasets.
+Visualization: Recharts.
 
-Frontend Framework: React.js + TypeScript (Chosen for componentization, instant reactivity, and strict type-safety for Single Page Applications).
+AI Integration: Google Gemini API.
 
-Styling & UI: Tailwind CSS (Ensures a premium, responsive design that rivals leading SaaS tools on the market).
-
-Data Visualization: Recharts (A lightweight, powerful library for plotting dynamic charts based on memory state).
-
-Artificial Intelligence: Google Gemini API (gemini-1.5-flash) (A fast, highly capable model smoothly embedded via REST API).
-
-Deployment: Vercel / StackBlitz (For agile, serverless Continuous Integration and live testing).
+Deployment: Vercel.
 
 💼 **Developer / Portfolio**
 
-Project By: Eduardo Duarte e Araujo
+Project By: **Eduardo Duarte e Araujo**
 
-Role: CX Strategy & Data Analytics / Vibecoder
 
-Methodology: AI-Assisted Product Development (Vibecoding)
+Role: CX Strategy & Data Analytics / AI-Augmented Product Development
 
-Disclaimer: This application is a Proof of Concept (PoC) developed to demonstrate proficiency in operational data architecture, software project management, problem-solving, and the applied use of Generative Artificial Intelligence.
+**Disclaimer: This application is a Proof of Concept (PoC) developed to demonstrate proficiency in operational data architecture, product management, and the applied use of Artificial Intelligence.**
