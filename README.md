@@ -20,6 +20,18 @@ Throughout my career managing high-complexity and hyper-growth operations, the c
 
 The Sonata CX Capacity Planner try to solve this pain point. It acts as an "Analytics Cockpit" that empowers support managers, allowing them to perform complex analyses, evaluate First Contact Resolution (FCR) rates, understand hourly bottlenecks (Thermal Heatmaps), and instantly size their required workforce using nothing more than a simple CSV upload.
 
+🚀 **What's New in Version 6.0?**
+
+The most significant milestone of this version is the introduction of the Custom Operational Window Engine.
+
+In previous iterations, the tool calculated headcount needs based on a default 24/7 operational assumption. In version 6.0, the user now has total granular control over:
+
+  **Operating Days:** Specific selection of which days of the week the operation is active (e.g., Monday to Friday only).
+
+  **Operating Hours:** Exact definition of start and end times for the service window.
+
+**Business Impact:** This shift allows the tool to calculate the Ideal Headcount with surgical precision. Instead of diluting the workload across 24 hours or 7 days, the math now concentrates the demand only within the periods the team is actually logged in, providing a realistic view of staffing gaps and surplus.
+
 🐍 **Data Engineering & Realistic Simulation (The Python Pipeline)**
 
 In real-world CX operations, you rarely get perfectly clean data handed to you. To simulate a genuine hyper-growth scenario while strictly adhering to data privacy standards (preventing the use of actual customer PII), I needed a robust dataset to test this tool.
