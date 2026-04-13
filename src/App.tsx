@@ -377,33 +377,27 @@ Atue como Consultor de CX Sênior com foco em Workforce Management (WFM).
 
 DADOS DA OPERAÇÃO:
 - Mercado: ${config.companyMarket}
-- Dias de operação: ${opDaysLabel} | Horário: ${config.operationStartHour}h às ${config.operationEndHour}h
-- Headcount Atual: ${config.teamSize} analistas
-- Headcount Ideal Calculado (apenas TMA, inclui fator de cobertura de folgas ${coverageFactor.toFixed(2)}×): ${s.hcIdeal} analistas
-  → Voz: ${s.hcDist.phone} | Chat: ${s.hcDist.chat} | E-mail: ${s.hcDist.email}
-  → Headcount base sem fator de cobertura: ${s.hcBase} analistas (${coveragePct}% adicionado para cobrir folgas 5×2)
-- Canais ativos e TMA: ${activeChannels}
+- Operação: ${opDaysLabel} | ${config.operationStartHour}h–${config.operationEndHour}h | Jornada ${config.shiftHours}h/dia | ${weeklyHours} semanais | Escala 5×2
+- Headcount Atual: ${config.teamSize} | Headcount Ideal: ${s.hcIdeal} (Voz: ${s.hcDist.phone} | Chat: ${s.hcDist.chat} | E-mail: ${s.hcDist.email})
+- Canais e TMA: ${activeChannels}
 - Volume por canal: Telefone ${s.pDist.phone}% | Chat ${s.pDist.chat}% | E-mail ${s.pDist.email}%
-- Volume Médio Diário (dias úteis): ${s.avgDailyVolLastMonth} tickets/dia (${s.workingDaysInLastMonth} dias úteis)
-- Crescimento Mensal Médio: ${(s.growth*100).toFixed(1)}%
-- Taxa de Recontato (14 dias): ${s.globalFCR.toFixed(1)}%
+- Volume Médio Diário: ${s.avgDailyVolLastMonth} tickets/dia (${s.workingDaysInLastMonth} dias úteis/mês)
+- Crescimento Mensal: ${(s.growth*100).toFixed(1)}% | Taxa de Recontato (14d): ${s.globalFCR.toFixed(1)}%
 - Hora de pico: ${peakHour.hour} (${peakHour.total} analistas simultâneos)
-- Jornada dos analistas: ${config.shiftHours}h/dia | ${weeklyHours} semanais | Escala 5×2
 
 REGRAS DO RELATÓRIO:
 
-Seja direto e executivo. Não coloque [nome da empresa], [nome da pessoa] nem nenhum tipo de identificação, porque este relatório será apresentado ao cliente diretamente na tela, então não se comporte como se fosse um e-mail ou um documento a ser enviado.
+Seja direto e executivo. Não use saudações, não nomeie empresa ou pessoa — o relatório será exibido na tela do cliente. Não repita informações entre seções. Cada ponto deve agregar algo novo.
 
-1. Considere que a escala foi calculada considerando o headcount em escala 5×2 (todos os analistas folgam 2 dias por semana) para fins de escala. Caso esta não seja a realidade daquela operação, é papel do gestor de CX avaliar a aderência que aqueles dados têm com o seu dia-a-dia.
-2. O headcount foi calculado SOMENTE com base no TMA (Tempo Médio de Atendimento) informado por canal. Destaque que melhorias de TMA (treinamento, ferramentas de IA assistiva, base de conhecimento, processos) têm impacto direto e imediato na produtividade — um time com baixa maturidade ou muitos novatos terá TMA maior, o que eleva a necessidade de HC.
-3. Explique as peculiaridades de cada canal: E-mail pode ter TMA curto e pode ser processado em lote, sendo o canal mais eficiente por agente, mas e-mail também pode ser um canal de TMA longo, a depender das ferramentas, nível de dúvidas e complexidade do processo para a resolução. É preciso que seja feita uma análise que leve em conta qual a realidade da empresa para aquele canal. Chat depende do tempo de resposta do cliente, mas favorece a simultaneidade. Telefone é o canal de maior custo unitário (1 analista por chamada). Explique que a escolha dos canais passa pela estratégia de favorecer um ou outro canal conforme estratégia macro da área e da empresa.
-4. SE (HC Ideal) > (Atual + 15%): recomende automação e self-service (Tier 0/1) antes de contratar. Explique que contratações levam tempo para começar a performar, além de ser pouco escalável. Melhorias de tecnologia são geralmente caras e demoradas, mas muito escaláveis; melhorias de processos podem ser rápidas e razoavelmente escaláveis.
-5. SE (HC ATUAL) > (HC Ideal) E Crescimento > 10%: Explique que o headcount atual é maior que o necessário e questione se tem alguma justificativa para isso, como um crescimento previsto maior que a média dos últimos meses. Informe em quanto tempo, pela taxa de crescimento atual, o headcount seria suficiente para segurar a operação. Reforce que este é um ótimo momento para que a operação se preocupe com o treinamento e qualidade dos analistas, e que métricas como CSAT, NPS e outras métricas de qualidade devem ser priorizadas para a excelência.
-6. SE HC equilibrado E Crescimento < 10%: foque em qualidade, melhorias de processos e redução de TMA.
-7. SE (HC ATUAL) for muito maior que (HC Ideal) (superior a 15%), aponte como um ponto de atenção no dimensionamento e sugira uma revisão nas funções e serviços executados por cada analista.
-8. Comente sobre a hora de pico (${peakHour.hour}) e como isso impacta a gestão de escalas e turnos.
-9. Mencione que o dashboard já inclui um gráfico de analistas necessários por hora, por canal — uma ferramenta prática para montar turnos.
-10. Venda discretamente a Sonata.cx no final como parceira estratégica de CX para WFM e outras demandas de CX.
+1. Abra analisando o cenário de dimensionamento: compare HC Atual vs Ideal, mostre a distribuição por canal e explique em uma frase como o TMA afeta o HC (sem detalhar o cálculo — o disclaimer já explica).
+2. Analise os canais ativos. Cada canal tem uma frase sobre sua peculiaridade: e-mail (eficiência em lote vs. complexidade dependendo do processo), chat (simultaneidade vs. tempo de resposta do cliente), telefone (custo unitário alto, 1 analista por atendimento). Finalize comentando que o mix de canais é uma decisão estratégica.
+3. Aplique SOMENTE UM dos cenários abaixo, conforme os números:
+   - SE HC Ideal > (Atual × 1.15): recomendar automação/self-service (Tier 0/1) antes de contratar. Tecnologia: cara e demorada, mas altamente escalável. Processos: rápidos e razoavelmente escaláveis. Contratação: lenta e pouco escalável.
+   - SE HC Atual > HC Ideal E Crescimento > 10%: questionar se há justificativa para o excesso (crescimento acelerado previsto?), estimar quando o volume tornará o time insuficiente e reforçar que é o momento ideal para CSAT, NPS e qualidade.
+   - SE HC Atual muito acima do HC Ideal (>15%): apontar como ponto de atenção e sugerir revisão das funções dos analistas.
+   - SE equilibrado E Crescimento < 10%: foco em qualidade, processos e redução de TMA.
+4. Comente a hora de pico (${peakHour.hour}) e como o gráfico de analistas por hora do dashboard ajuda a planejar turnos escalonados.
+5. Encerre com uma menção discreta à Sonata.cx como parceira estratégica de CX e WFM.
     `;
     try {
       const url = `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
@@ -782,9 +776,9 @@ Seja direto e executivo. Não coloque [nome da empresa], [nome da pessoa] nem ne
               </div>
             </div>
 
-            {/* ── Analistas por Hora (NOVO) ─────────────────────── */}
+            {/* ── Analistas por Hora ─────────────────────────────── */}
             {s.hourlyStaffing.length > 0 && (
-              <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex flex-col" style={{height:440}}>
+              <div id="chart-hourly" className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
                 <div className="mb-4">
                   <h3 className="text-lg font-black text-slate-800">Analistas Necessários por Hora</h3>
                   <p className="text-xs text-slate-500 mt-1">
@@ -793,8 +787,8 @@ Seja direto e executivo. Não coloque [nome da empresa], [nome da pessoa] nem ne
                     Use este gráfico para planear entradas escalonadas e cobrir o pico sem sobrecarga.
                   </p>
                 </div>
-                <div className="flex-1 min-h-0">
-                  <ResponsiveContainer width="100%" height="100%">
+                <div style={{height:340}}>
+                  <ResponsiveContainer width="100%" height={340}>
                     <BarChart data={s.hourlyStaffing} margin={{top:10,right:10,left:-20,bottom:0}}>
                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9"/>
                       <XAxis dataKey="hour" axisLine={false} tickLine={false} tick={{fontSize:11,fill:'#64748b'}}/>
@@ -881,35 +875,37 @@ Seja direto e executivo. Não coloque [nome da empresa], [nome da pessoa] nem ne
             </div>
 
             {/* ── Mapa de Calor ─────────────────────────────────── */}
-            <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm h-[450px] flex flex-col overflow-hidden">
+            <div id="chart-heatmap" className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
               <h3 className="text-lg font-black text-slate-800 mb-1">Mapa de Calor (Concentração de Volume)</h3>
-              <p className="text-xs text-slate-500 mb-6">Dias da Semana vs. Horas do Dia. Identifique picos térmicos para elaboração de escalas.</p>
-              <div className="flex-1 overflow-auto pr-2 pb-2 custom-scrollbar">
-                <div className="flex ml-12 mb-2">
-                  {Array.from({length:24}).map((_:any,h:number) => (
-                    <div key={h} className="flex-1 text-center text-[9px] font-bold text-slate-400 min-w-[24px]">{h}h</div>
-                  ))}
-                </div>
-                <div className="flex flex-col gap-1">
-                  {WEEKDAYS.map((day:string,dIdx:number) => (
-                    <div key={day} className="flex items-center h-8">
-                      <div className="w-12 text-[10px] font-black text-slate-600 uppercase text-right pr-3">{day}</div>
-                      <div className="flex flex-1 gap-1 h-full">
-                        {s.heatmapGrid[dIdx].map((val:number,hIdx:number) => (
-                          <div key={hIdx} className="flex-1 rounded-sm relative group cursor-crosshair transition-all hover:ring-2 hover:ring-slate-900 hover:z-10"
-                            style={{backgroundColor:getHeatmapColor(val,s.maxHeatmapVal)}}>
-                            <div className="absolute opacity-0 group-hover:opacity-100 bottom-full left-1/2 -translate-x-1/2 mb-2 bg-slate-900 text-white text-[10px] font-bold py-1 px-2 rounded whitespace-nowrap pointer-events-none z-50">
-                              {day}, {hIdx}h: {val} contactos
+              <p className="text-xs text-slate-500 mb-4">Dias da Semana vs. Horas do Dia. Identifique picos térmicos para elaboração de escalas.</p>
+              <div className="overflow-auto custom-scrollbar" style={{maxHeight:340}}>
+                <div style={{minWidth:640}}>
+                  <div className="flex ml-12 mb-2">
+                    {Array.from({length:24}).map((_:any,h:number) => (
+                      <div key={h} className="flex-1 text-center text-[9px] font-bold text-slate-400 min-w-[24px]">{h}h</div>
+                    ))}
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    {WEEKDAYS.map((day:string,dIdx:number) => (
+                      <div key={day} className="flex items-center h-8">
+                        <div className="w-12 text-[10px] font-black text-slate-600 uppercase text-right pr-3">{day}</div>
+                        <div className="flex flex-1 gap-1 h-full">
+                          {s.heatmapGrid[dIdx].map((val:number,hIdx:number) => (
+                            <div key={hIdx} className="flex-1 rounded-sm relative group cursor-crosshair transition-all hover:ring-2 hover:ring-slate-900 hover:z-10 min-w-[24px]"
+                              style={{backgroundColor:getHeatmapColor(val,s.maxHeatmapVal)}}>
+                              <div className="absolute opacity-0 group-hover:opacity-100 bottom-full left-1/2 -translate-x-1/2 mb-2 bg-slate-900 text-white text-[10px] font-bold py-1 px-2 rounded whitespace-nowrap pointer-events-none z-50">
+                                {day}, {hIdx}h: {val} contactos
+                              </div>
                             </div>
-                          </div>
-                        ))}
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
-                <div className="mt-6 flex items-center justify-end gap-2 text-[10px] font-bold text-slate-400">
-                  Zero <div className="w-4 h-4 rounded-sm bg-[#f1f5f9]"/> <span className="mx-2">|</span> Frio
-                  <div className="w-32 h-3 rounded-full" style={{background:'linear-gradient(to right,#3b82f6,#22c55e,#eab308,#ef4444)'}}/> Quente
+                    ))}
+                  </div>
+                  <div className="mt-4 flex items-center justify-end gap-2 text-[10px] font-bold text-slate-400">
+                    Zero <div className="w-4 h-4 rounded-sm bg-[#f1f5f9]"/> <span className="mx-2">|</span> Frio
+                    <div className="w-32 h-3 rounded-full" style={{background:'linear-gradient(to right,#3b82f6,#22c55e,#eab308,#ef4444)'}}/> Quente
+                  </div>
                 </div>
               </div>
             </div>
@@ -934,16 +930,7 @@ Seja direto e executivo. Não coloque [nome da empresa], [nome da pessoa] nem ne
                       a jornada máxima a 44h semanais, e a cada 3 domingos trabalhados o analista tem
                       direito ao 4º domingo de folga.
                     </li>
-                    {needsCoverage ? (
-                      <li>
-                        <strong>Fator de cobertura de folgas ({s.coverageFactor.toFixed(2)}×):</strong> Sua
-                        operação funciona <strong>{opDays} dias/semana</strong>, mas cada analista só
-                        trabalha <strong>5 dias</strong>. Nos dias em que uns estão de folga, outros precisam
-                        cobrir — por isso o headcount foi acrescido em <strong>{covPct}%</strong> em relação
-                        ao volume puro. O resultado ({s.hcIdeal} analistas) já inclui esse acréscimo.
-                        O headcount base (sem o fator de cobertura) seria de <strong>{s.hcBase} analistas</strong>.
-                      </li>
-                    ) : (
+                    {needsCoverage ? null : (
                       <li>
                         <strong>Fator de cobertura:</strong> Sua operação funciona <strong>{opDays} dias/semana</strong>.
                         Como isso é igual ou inferior a 5 dias, todos os analistas conseguem cobrir todos
@@ -1025,6 +1012,25 @@ Seja direto e executivo. Não coloque [nome da empresa], [nome da pessoa] nem ne
         @media print{
           aside,button{display:none!important;}
           main{padding:0;width:100%;max-width:100%;background:white;}
+
+          /* Garante que todos os cards de gráfico não sejam cortados */
+          main > div > div > div {
+            break-inside: avoid;
+            page-break-inside: avoid;
+          }
+
+          /* Heatmap: remove scroll e mostra tudo */
+          #chart-heatmap { overflow: visible !important; height: auto !important; }
+          #chart-heatmap > div { max-height: none !important; overflow: visible !important; }
+          #chart-heatmap > div > div { min-width: auto !important; }
+
+          /* Gráfico de barras por hora: garante altura explícita */
+          #chart-hourly { page-break-inside: avoid; break-inside: avoid; }
+          #chart-hourly > div[style] { height: 340px !important; }
+
+          /* Seção de notas: mantém legível */
+          .bg-indigo-50 { background-color: #eef2ff !important; border-color: #c7d2fe !important; }
+
           #ai-report-section{background:white!important;color:black!important;box-shadow:none!important;margin-top:2rem;}
           #ai-report-section *{color:black!important;border-color:#e2e8f0!important;}
         }
