@@ -12,12 +12,13 @@ import {
 } from 'lucide-react';
 
 /**
- * SONATA CX CAPACITY PLANNER - v5.0
- * - Lógica de HC reformulada: apenas TMA (min) por canal, proporcional ao volume
- * - Toggle de canal ativo/inativo (TMA=0 também desativa)
- * - Novo gráfico: analistas necessários por hora (barras empilhadas por canal)
- * - Corrigido bug do card "Equipa Necessária" (conflito de classe bg-)
- * - Removido TME e SLA de Reabertura da sidebar
+ * SONATA CX CAPACITY PLANNER - v5.1
+ * - Lógica de HC: apenas TMA (min) por canal, proporcional ao volume, com fator de cobertura 5×2
+ * - Toggle por canal; TMA=0 desativa o canal no cálculo
+ * - Gráfico de analistas necessários por hora (barras empilhadas por canal)
+ * - Gráfico de evolução do volume por canal (área empilhada)
+ * - Disclaimer estático sobre escala, jornada e limitações do cálculo
+ * - Logo da Sonata no cabeçalho do Parecer Estratégico
  */
 
 const CHART_COLORS = ['#4F46E5','#818CF8','#C7D2FE','#312E81','#6366F1','#4338CA','#1E1B4B','#A5B4FC'];
@@ -924,8 +925,7 @@ Seja direto e executivo. Não use saudações, não nomeie empresa ou pessoa —
                       <strong>Escala 5×2:</strong> O headcount ideal considera que cada analista trabalha
                       <strong> {shift}h/dia, {weeklyH}h semanais</strong>, descansando 2 dias por semana
                       (escala 5×2). Nenhum analista trabalha 7 dias corridos — a CLT brasileira limita
-                      a jornada máxima a 44h semanais, e a cada 3 domingos trabalhados o analista tem
-                      direito ao 4º domingo de folga.
+                      a jornada máxima a 44h semanais, entre outras regras de folga.
                     </li>
                     {needsCoverage ? null : (
                       <li>
@@ -1009,15 +1009,8 @@ Seja direto e executivo. Não use saudações, não nomeie empresa ou pessoa —
         .custom-scrollbar::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:10px;}
         .custom-scrollbar::-webkit-scrollbar-thumb:hover{background:#94a3b8;}
         @media print{
-          * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
           aside, button { display: none !important; }
-          main { padding: 0 !important; width: 100% !important; max-width: 100% !important; background: white !important; }
-
-          /* Cada card: não quebra no meio */
-          .space-y-8 > * { break-inside: avoid; page-break-inside: avoid; margin-bottom: 1.5rem; }
-
-          /* Recharts: força largura total nos SVGs */
-          .recharts-wrapper, .recharts-surface { width: 100% !important; }
+          main { padding: 0; width: 100%; max-width: 100%; background: white; }
 
           /* Heatmap: remove scroll e mostra tudo */
           #chart-heatmap .custom-scrollbar { overflow: visible !important; max-height: none !important; }
@@ -1026,7 +1019,7 @@ Seja direto e executivo. Não use saudações, não nomeie empresa ou pessoa —
           /* Notas sobre escala */
           .bg-indigo-50 { background-color: #eef2ff !important; }
 
-          /* Parecer AI: fundo branco, sem espaço extra no topo */
+          /* Parecer AI */
           #ai-report-section {
             background: white !important; color: black !important;
             box-shadow: none !important; margin-top: 0 !important; padding-top: 1rem !important;
