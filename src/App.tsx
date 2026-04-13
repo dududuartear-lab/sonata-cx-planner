@@ -367,8 +367,6 @@ export default function App() {
     const peakHour = s.hourlyStaffing.reduce((best,cur) => cur.total>best.total ? cur : best, {hour:'-',total:0,telefone:0,chat:0,email:0});
 
     const weeklyHours = Number(config.shiftHours) === 8 ? '40h' : Number(config.shiftHours) === 6 ? '30h' : '20h';
-    const coverageFactor = s.coverageFactor;
-    const coveragePct = ((s.coverageFactor - 1) * 100).toFixed(0);
 
     const prompt = `
 [INSTRUÇÃO DE SISTEMA]: Você é um consultor sênior da Sonata.cx. Use formatação Markdown.
@@ -915,7 +913,6 @@ Seja direto e executivo. Não use saudações, não nomeie empresa ou pessoa —
               const opDays = config.operationDays.length;
               const shift  = Number(config.shiftHours);
               const weeklyH = shift === 8 ? 40 : shift === 6 ? 30 : 20;
-              const covPct  = ((s.coverageFactor - 1) * 100).toFixed(0);
               const needsCoverage = s.coverageFactor > 1;
               return (
                 <div className="bg-indigo-50 border border-indigo-100 rounded-3xl p-6 text-slate-700 text-sm space-y-3">
