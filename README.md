@@ -6,7 +6,7 @@ To see the dashboard in action, check out the live link below:
 
 **Live Demo: https://sonata-cx-planner.vercel.app/**
 
-Seamless Onboarding (Built-in Template): To ensure a smooth experience for CX professionals and operational managers, I implemented a "Download Sample Template" feature directly on the upload screen. This allows users to instantly download a properly formatted .csv file, enabling immediate validation of the dashboard's analytical engine and data requirements with minimal friction.
+**Seamless Onboarding (Built-in Template):** To ensure a smooth experience for CX professionals and operational managers, I implemented a "Download Sample Template" feature directly on the upload screen. This allows users to instantly download a properly formatted .csv file, enabling immediate validation of the dashboard's analytical engine and data requirements with minimal friction.
 
 Full Realistic Dataset: For a comprehensive evaluation of the tool's processing power and KPI accuracy, use the input_tickets_delivery.csv file available in this repository.
 
