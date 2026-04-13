@@ -12,7 +12,7 @@ import {
 } from 'lucide-react';
 
 /**
- * SONATA CX CAPACITY PLANNER - v6.0
+ * SONATA CX CAPACITY PLANNER - v5.0
  * - Lógica de HC reformulada: apenas TMA (min) por canal, proporcional ao volume
  * - Toggle de canal ativo/inativo (TMA=0 também desativa)
  * - Novo gráfico: analistas necessários por hora (barras empilhadas por canal)
@@ -66,6 +66,11 @@ interface StatsType {
   monthlyTrend: { month: string; volume: number; telefone: number; chat: number; email: number }[];
   globalFCR: number; fcrTrend: { month: string; rate: number }[];
   hcIdeal: number; hcDist: { phone: number; chat: number; email: number };
+  // HC "bruto" antes do fator de cobertura (para referência)
+  hcBase: number;
+  // Fator de cobertura: operationDays.length / 5 (mínimo 1)
+  // Garante que analistas com folgas cubram todos os dias de operação
+  coverageFactor: number;
   pDist: { phone: number; chat: number; email: number };
   subjectsMap: Record<string, { total: number; motives: Record<string, number> }>;
   pieSubjects: { name: string; value: number }[];
@@ -76,7 +81,8 @@ interface StatsType {
 const defaultStats: StatsType = {
   total:0, avgDailyVolLastMonth:0, workingDaysInLastMonth:0, growth:0,
   monthlyTrend:[], globalFCR:0, fcrTrend:[],
-  hcIdeal:0, hcDist:{phone:0,chat:0,email:0}, pDist:{phone:0,chat:0,email:0},
+  hcIdeal:0, hcDist:{phone:0,chat:0,email:0}, hcBase:0, coverageFactor:1,
+  pDist:{phone:0,chat:0,email:0},
   subjectsMap:{}, pieSubjects:[],
   heatmapGrid:Array(7).fill(null).map(()=>Array(24).fill(0)),
   maxHeatmapVal:0, hourlyStaffing:[]
@@ -221,9 +227,26 @@ export default function App() {
     const wlEmailMin = (avgDailyVolLastMonth * pEmail) * tmEmail;
 
     // HC por canal com fator de ocupação de 82%
-    const hcPhone = phoneActive ? Math.ceil((wlPhoneMin / netWorkMin) / 0.82) : 0;
-    const hcChat  = chatActive  ? Math.ceil((wlChatMin  / netWorkMin) / 0.82) : 0;
-    const hcEmail = emailActive ? Math.ceil((wlEmailMin / netWorkMin) / 0.82) : 0;
+    // hcBase = analistas para cobrir a DEMANDA de um único dia de operação
+    const hcPhoneBase = phoneActive ? Math.ceil((wlPhoneMin / netWorkMin) / 0.82) : 0;
+    const hcChatBase  = chatActive  ? Math.ceil((wlChatMin  / netWorkMin) / 0.82) : 0;
+    const hcEmailBase = emailActive ? Math.ceil((wlEmailMin / netWorkMin) / 0.82) : 0;
+    const hcBase = hcPhoneBase + hcChatBase + hcEmailBase;
+
+    // ── Fator de cobertura de folgas (escala 5×2) ───────────────────────────
+    // Cada analista trabalha 5 dias/semana e folga 2.
+    // Se a operação roda N dias/semana (N > 5), precisamos de N/5 vezes mais
+    // analistas para que todos os dias estejam cobertos quando uns estão de folga.
+    // Ex: operação 7 dias → fator 7/5 = 1,40 → +40% de headcount.
+    // Ex: operação 6 dias → fator 6/5 = 1,20 → +20% de headcount.
+    // Ex: operação 5 dias → fator 5/5 = 1,00 → sem acréscimo.
+    // Ex: operação ≤ 4 dias → todos os analistas conseguem cobrir todos os dias
+    //     sem sobreposição, portanto fator = 1 (sem acréscimo).
+    const coverageFactor = Math.max(config.operationDays.length / 5, 1);
+
+    const hcPhone = Math.ceil(hcPhoneBase * coverageFactor);
+    const hcChat  = Math.ceil(hcChatBase  * coverageFactor);
+    const hcEmail = Math.ceil(hcEmailBase * coverageFactor);
     const hcIdeal = hcPhone + hcChat + hcEmail;
 
     // ── Recontato (FCR) ─────────────────────────────────────────────────────
@@ -302,7 +325,8 @@ export default function App() {
       total: rawData.length,
       avgDailyVolLastMonth: Math.round(avgDailyVolLastMonth),
       workingDaysInLastMonth, growth, monthlyTrend, globalFCR, fcrTrend,
-      hcIdeal, hcDist:{phone:hcPhone,chat:hcChat,email:hcEmail},
+      hcIdeal, hcBase, coverageFactor,
+      hcDist:{phone:hcPhone,chat:hcChat,email:hcEmail},
       pDist:{phone:Math.round(pPhone*100),chat:Math.round(pChat*100),email:Math.round(pEmail*100)},
       subjectsMap, pieSubjects, heatmapGrid, maxHeatmapVal, hourlyStaffing
     };
@@ -342,32 +366,44 @@ export default function App() {
     const opDaysLabel = config.operationDays.map((d:number) => DAY_FULL[d]).join(', ');
     const peakHour = s.hourlyStaffing.reduce((best,cur) => cur.total>best.total ? cur : best, {hour:'-',total:0,telefone:0,chat:0,email:0});
 
-    const prompt = `
-[INSTRUÇÃO DE SISTEMA]: Você é um consultor sênior da Sonata.cx. Use formatação Markdown. Seja direto e executivo.
+    const weeklyHours = Number(config.shiftHours) === 8 ? '40h' : Number(config.shiftHours) === 6 ? '30h' : '20h';
+    const coverageFactor = s.coverageFactor;
+    const coveragePct = ((s.coverageFactor - 1) * 100).toFixed(0);
 
-Atue como Consultor de Workforce Management (WFM) e CX Sênior.
+    const prompt = `
+[INSTRUÇÃO DE SISTEMA]: Você é um consultor sênior da Sonata.cx. Use formatação Markdown.
+
+Atue como Consultor de CX Sênior com foco em Workforce Management (WFM).
 
 DADOS DA OPERAÇÃO:
 - Mercado: ${config.companyMarket}
 - Dias de operação: ${opDaysLabel} | Horário: ${config.operationStartHour}h às ${config.operationEndHour}h
 - Headcount Atual: ${config.teamSize} analistas
-- Headcount Ideal Calculado (apenas TMA): ${s.hcIdeal} analistas
+- Headcount Ideal Calculado (apenas TMA, inclui fator de cobertura de folgas ${coverageFactor.toFixed(2)}×): ${s.hcIdeal} analistas
   → Voz: ${s.hcDist.phone} | Chat: ${s.hcDist.chat} | E-mail: ${s.hcDist.email}
+  → Headcount base sem fator de cobertura: ${s.hcBase} analistas (${coveragePct}% adicionado para cobrir folgas 5×2)
 - Canais ativos e TMA: ${activeChannels}
 - Volume por canal: Telefone ${s.pDist.phone}% | Chat ${s.pDist.chat}% | E-mail ${s.pDist.email}%
 - Volume Médio Diário (dias úteis): ${s.avgDailyVolLastMonth} tickets/dia (${s.workingDaysInLastMonth} dias úteis)
 - Crescimento Mensal Médio: ${(s.growth*100).toFixed(1)}%
 - Taxa de Recontato (14 dias): ${s.globalFCR.toFixed(1)}%
 - Hora de pico: ${peakHour.hour} (${peakHour.total} analistas simultâneos)
+- Jornada dos analistas: ${config.shiftHours}h/dia | ${weeklyHours} semanais | Escala 5×2
 
 REGRAS DO RELATÓRIO:
-1. O headcount foi calculado SOMENTE com base no TMA (Tempo Médio de Atendimento) por canal. Destaque que melhorias de TMA (treinamento, ferramentas de IA assistiva, base de conhecimento, processos) têm impacto direto e imediato na produtividade — um time com baixa maturidade ou muitos novatos terá TMA maior, o que eleva a necessidade de HC.
-2. Explique as peculiaridades de cada canal: E-mail tem TMA curto e pode ser processado em lote — é o canal mais eficiente por agente. Chat depende do tempo de resposta do cliente, favorecendo a simultaneidade. Telefone é o canal de maior custo unitário (1 analista por chamada).
-3. SE (HC Ideal) > (Atual + 15%) OU Crescimento > 10%: recomende automação e self-service (Tier 0/1) antes de contratar.
-4. SE HC equilibrado E Crescimento < 10%: foque em qualidade e redução de TMA.
-5. Comente sobre a hora de pico (${peakHour.hour}) e como isso impacta a gestão de escalas e turnos.
-6. Mencione que o dashboard já inclui um gráfico de analistas necessários por hora, por canal — uma ferramenta prática para montar turnos.
-7. Venda discretamente a Sonata.cx no final como parceira estratégica de WFM e CX.
+
+Seja direto e executivo. Não coloque [nome da empresa], [nome da pessoa] nem nenhum tipo de identificação, porque este relatório será apresentado ao cliente diretamente na tela, então não se comporte como se fosse um e-mail ou um documento a ser enviado.
+
+1. Considere que a escala foi calculada considerando o headcount em escala 5×2 (todos os analistas folgam 2 dias por semana) para fins de escala. Caso esta não seja a realidade daquela operação, é papel do gestor de CX avaliar a aderência que aqueles dados têm com o seu dia-a-dia.
+2. O headcount foi calculado SOMENTE com base no TMA (Tempo Médio de Atendimento) informado por canal. Destaque que melhorias de TMA (treinamento, ferramentas de IA assistiva, base de conhecimento, processos) têm impacto direto e imediato na produtividade — um time com baixa maturidade ou muitos novatos terá TMA maior, o que eleva a necessidade de HC.
+3. Explique as peculiaridades de cada canal: E-mail pode ter TMA curto e pode ser processado em lote, sendo o canal mais eficiente por agente, mas e-mail também pode ser um canal de TMA longo, a depender das ferramentas, nível de dúvidas e complexidade do processo para a resolução. É preciso que seja feita uma análise que leve em conta qual a realidade da empresa para aquele canal. Chat depende do tempo de resposta do cliente, mas favorece a simultaneidade. Telefone é o canal de maior custo unitário (1 analista por chamada). Explique que a escolha dos canais passa pela estratégia de favorecer um ou outro canal conforme estratégia macro da área e da empresa.
+4. SE (HC Ideal) > (Atual + 15%): recomende automação e self-service (Tier 0/1) antes de contratar. Explique que contratações levam tempo para começar a performar, além de ser pouco escalável. Melhorias de tecnologia são geralmente caras e demoradas, mas muito escaláveis; melhorias de processos podem ser rápidas e razoavelmente escaláveis.
+5. SE (HC ATUAL) > (HC Ideal) E Crescimento > 10%: Explique que o headcount atual é maior que o necessário e questione se tem alguma justificativa para isso, como um crescimento previsto maior que a média dos últimos meses. Informe em quanto tempo, pela taxa de crescimento atual, o headcount seria suficiente para segurar a operação. Reforce que este é um ótimo momento para que a operação se preocupe com o treinamento e qualidade dos analistas, e que métricas como CSAT, NPS e outras métricas de qualidade devem ser priorizadas para a excelência.
+6. SE HC equilibrado E Crescimento < 10%: foque em qualidade, melhorias de processos e redução de TMA.
+7. SE (HC ATUAL) for muito maior que (HC Ideal) (superior a 15%), aponte como um ponto de atenção no dimensionamento e sugira uma revisão nas funções e serviços executados por cada analista.
+8. Comente sobre a hora de pico (${peakHour.hour}) e como isso impacta a gestão de escalas e turnos.
+9. Mencione que o dashboard já inclui um gráfico de analistas necessários por hora, por canal — uma ferramenta prática para montar turnos.
+10. Venda discretamente a Sonata.cx no final como parceira estratégica de CX para WFM e outras demandas de CX.
     `;
     try {
       const url = `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
@@ -877,6 +913,60 @@ REGRAS DO RELATÓRIO:
                 </div>
               </div>
             </div>
+
+            {/* ── Notas sobre o Cálculo de Escala ──────────────── */}
+            {(() => {
+              const opDays = config.operationDays.length;
+              const shift  = Number(config.shiftHours);
+              const weeklyH = shift === 8 ? 40 : shift === 6 ? 30 : 20;
+              const covPct  = ((s.coverageFactor - 1) * 100).toFixed(0);
+              const needsCoverage = s.coverageFactor > 1;
+              return (
+                <div className="bg-indigo-50 border border-indigo-100 rounded-3xl p-6 text-slate-700 text-sm space-y-3">
+                  <h4 className="font-black text-indigo-700 uppercase tracking-widest text-xs flex items-center gap-2">
+                    📋 Notas sobre o Cálculo de Escala por Hora
+                  </h4>
+                  <ul className="space-y-2 text-[13px] leading-relaxed">
+                    <li>
+                      <strong>Escala 5×2:</strong> O headcount ideal considera que cada analista trabalha
+                      <strong> {shift}h/dia, {weeklyH}h semanais</strong>, descansando 2 dias por semana
+                      (escala 5×2). Nenhum analista trabalha 7 dias corridos — a CLT brasileira limita
+                      a jornada máxima a 44h semanais, e a cada 3 domingos trabalhados o analista tem
+                      direito ao 4º domingo de folga.
+                    </li>
+                    {needsCoverage ? (
+                      <li>
+                        <strong>Fator de cobertura de folgas ({s.coverageFactor.toFixed(2)}×):</strong> Sua
+                        operação funciona <strong>{opDays} dias/semana</strong>, mas cada analista só
+                        trabalha <strong>5 dias</strong>. Nos dias em que uns estão de folga, outros precisam
+                        cobrir — por isso o headcount foi acrescido em <strong>{covPct}%</strong> em relação
+                        ao volume puro. O resultado ({s.hcIdeal} analistas) já inclui esse acréscimo.
+                        O headcount base (sem o fator de cobertura) seria de <strong>{s.hcBase} analistas</strong>.
+                      </li>
+                    ) : (
+                      <li>
+                        <strong>Fator de cobertura:</strong> Sua operação funciona <strong>{opDays} dias/semana</strong>.
+                        Como isso é igual ou inferior a 5 dias, todos os analistas conseguem cobrir todos
+                        os dias de operação dentro da sua própria jornada semanal — nenhum acréscimo de
+                        headcount foi necessário por conta de folgas.
+                      </li>
+                    )}
+                    <li>
+                      <strong>Gráfico de analistas por hora:</strong> O gráfico acima mostra a demanda
+                      horária estimada por canal. Use-o para planejar entradas escalonadas: analistas
+                      com jornadas de {shift}h que entram em horários diferentes cobrem o pico com
+                      sobreposição controlada, sem superdimensionar o time em horários de baixo volume.
+                    </li>
+                    <li className="text-indigo-500 font-medium">
+                      ⚠ Este cálculo é uma estimativa baseada nos dados históricos e nos parâmetros
+                      informados. O gestor de CX deve validar estes números com a realidade operacional
+                      do time, considerando absenteísmo, turnover, sazonalidades e particularidades de
+                      cada contrato de trabalho.
+                    </li>
+                  </ul>
+                </div>
+              );
+            })()}
 
             {/* ── Parecer Estratégico AI ────────────────────────── */}
             <div id="ai-report-section" className="bg-slate-900 rounded-[2.5rem] p-8 md:p-12 text-white shadow-xl mt-4 relative overflow-hidden">
