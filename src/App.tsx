@@ -12,8 +12,9 @@ import {
 } from 'lucide-react';
 
 /**
- * SONATA CX CAPACITY PLANNER - v4.9
- * Adicionado: configuração de dias e horários de operação.
+ * SONATA CX CAPACITY PLANNER - v5.0
+ * Adicionado: gráfico de área de volume de contatos com divisão por canal.
+ * Botão de Tentar Novamente quando o relatório de IA der erro.
  */
 
 const CHART_COLORS = ['#4F46E5', '#818CF8', '#C7D2FE', '#312E81', '#6366F1', '#4338CA', '#1E1B4B', '#A5B4FC'];
@@ -80,7 +81,7 @@ interface StatsType {
   avgDailyVolLastMonth: number;
   workingDaysInLastMonth: number;
   growth: number;
-  monthlyTrend: { month: string; volume: number }[];
+  monthlyTrend: { month: string; volume: number; telefone: number; chat: number; email: number }[];
   globalFCR: number;
   fcrTrend: { month: string; rate: number }[];
   hcIdeal: number;
@@ -117,6 +118,7 @@ export default function App() {
   const [isReportGenerated, setIsReportGenerated] = useState(false);
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [aiReport, setAiReport] = useState("");
+  const [isAiError, setIsAiError] = useState(false);
   const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
 
   const [config, setConfig] = useState<ConfigState>({
@@ -232,13 +234,22 @@ export default function App() {
     if (!rawData.length) return defaultStats;
 
     const monthMap: Record<string, number> = {};
+    const monthChannelMap: Record<string, { telefone: number; chat: number; email: number }> = {};
     rawData.forEach((d: TicketData) => {
         monthMap[d.yearMonth] = (monthMap[d.yearMonth] || 0) + 1;
+        if (!monthChannelMap[d.yearMonth]) monthChannelMap[d.yearMonth] = { telefone: 0, chat: 0, email: 0 };
+        const canal = d.canal?.toLowerCase() || '';
+        if (canal === 'telefone') monthChannelMap[d.yearMonth].telefone++;
+        else if (canal === 'chat') monthChannelMap[d.yearMonth].chat++;
+        else if (canal === 'email') monthChannelMap[d.yearMonth].email++;
     });
     
     const monthlyTrend = Object.keys(monthMap).sort().map((key: string) => ({
         month: key,
-        volume: monthMap[key]
+        volume: monthMap[key],
+        telefone: monthChannelMap[key]?.telefone || 0,
+        chat: monthChannelMap[key]?.chat || 0,
+        email: monthChannelMap[key]?.email || 0,
     }));
 
     let growth = 0;
@@ -375,6 +386,8 @@ export default function App() {
   const generateReportAndAI = async () => {
     setIsReportGenerated(true); 
     setIsAiLoading(true);
+    setIsAiError(false);
+    setAiReport("");
     
     const operationDaysLabel = config.operationDays.map((d: number) => DAY_FULL[d]).join(', ');
     
@@ -439,6 +452,7 @@ export default function App() {
       setAiReport(aiText);
       
     } catch (e: any) {
+      setIsAiError(true);
       if (e?.message?.includes('Failed to fetch') || e?.message?.includes('NetworkError')) {
          setAiReport(`### Bloqueio de Rede 🛡️\n\nA requisição foi bloqueada localmente. Verifique configurações de AdBlock, Shields do Brave ou Firewalls corporativos.\n\n*(Detalhe Técnico: \`${e?.message}\`)*`);
       } else {
@@ -760,21 +774,38 @@ export default function App() {
             </div>
 
             <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm h-96 flex flex-col">
-                <h3 className="text-lg font-black text-slate-800 mb-6 flex items-center gap-2">Evolução do Volume <span className="text-xs font-normal text-slate-400 bg-slate-100 px-2 py-0.5 rounded">Mês a Mês</span></h3>
+                <div className="flex items-start justify-between mb-6">
+                    <h3 className="text-lg font-black text-slate-800 flex items-center gap-2">Evolução do Volume <span className="text-xs font-normal text-slate-400 bg-slate-100 px-2 py-0.5 rounded">Mês a Mês</span></h3>
+                    <div className="flex items-center gap-3 text-[11px] font-bold">
+                        <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-sm inline-block" style={{background:'#4F46E5'}}></span>Telefone</span>
+                        <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-sm inline-block" style={{background:'#818CF8'}}></span>Chat</span>
+                        <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-sm inline-block" style={{background:'#C7D2FE'}}></span>E-mail</span>
+                    </div>
+                </div>
                 <div className="flex-1 min-h-0">
                     <ResponsiveContainer width="100%" height="100%">
                         <AreaChart data={s.monthlyTrend} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                             <defs>
-                                <linearGradient id="colorVol" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="5%" stopColor="#4F46E5" stopOpacity={0.3}/>
-                                <stop offset="95%" stopColor="#4F46E5" stopOpacity={0}/>
+                                <linearGradient id="colorTelefone" x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="5%" stopColor="#4F46E5" stopOpacity={0.85}/>
+                                    <stop offset="95%" stopColor="#4F46E5" stopOpacity={0.6}/>
+                                </linearGradient>
+                                <linearGradient id="colorChat" x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="5%" stopColor="#818CF8" stopOpacity={0.85}/>
+                                    <stop offset="95%" stopColor="#818CF8" stopOpacity={0.6}/>
+                                </linearGradient>
+                                <linearGradient id="colorEmail" x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="5%" stopColor="#C7D2FE" stopOpacity={0.85}/>
+                                    <stop offset="95%" stopColor="#C7D2FE" stopOpacity={0.6}/>
                                 </linearGradient>
                             </defs>
                             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9"/>
                             <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{fontSize: 12, fill: '#64748b'}} />
                             <YAxis axisLine={false} tickLine={false} tick={{fontSize: 12, fill: '#64748b'}} />
                             <RechartsTooltip content={(props: any) => <CustomTooltip {...props} />} cursor={{ stroke: '#cbd5e1', strokeWidth: 1, strokeDasharray: '4 4' }} />
-                            <Area type="monotone" dataKey="volume" name="Tickets" stroke="#4F46E5" strokeWidth={3} fillOpacity={1} fill="url(#colorVol)" />
+                            <Area stackId="1" type="monotone" dataKey="telefone" name="Telefone" stroke="#4F46E5" strokeWidth={2} fillOpacity={1} fill="url(#colorTelefone)" />
+                            <Area stackId="1" type="monotone" dataKey="chat"     name="Chat"     stroke="#818CF8" strokeWidth={2} fillOpacity={1} fill="url(#colorChat)" />
+                            <Area stackId="1" type="monotone" dataKey="email"    name="E-mail"   stroke="#C7D2FE" strokeWidth={2} fillOpacity={1} fill="url(#colorEmail)" />
                         </AreaChart>
                     </ResponsiveContainer>
                 </div>
@@ -916,10 +947,20 @@ export default function App() {
                                 return <p key={index} className="mb-4 leading-relaxed text-lg font-light" dangerouslySetInnerHTML={{__html: parsedHtml}}></p>;
                             })}
                             
-                            <div className="mt-12 pt-8 border-t border-white/10 flex justify-end">
-                                <button className="bg-white/10 hover:bg-white/20 text-white px-6 py-3 rounded-full text-sm font-bold transition-colors flex items-center gap-2" onClick={() => window.print()}>
-                                    <Download size={16}/> Exportar Relatório (PDF)
-                                </button>
+                            <div className="mt-12 pt-8 border-t border-white/10 flex justify-between items-center">
+                                {isAiError && (
+                                    <button
+                                        className="bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-3 rounded-full text-sm font-bold transition-colors flex items-center gap-2"
+                                        onClick={generateReportAndAI}
+                                    >
+                                        ↻ Tentar Novamente
+                                    </button>
+                                )}
+                                {!isAiError && (
+                                    <button className="bg-white/10 hover:bg-white/20 text-white px-6 py-3 rounded-full text-sm font-bold transition-colors flex items-center gap-2" onClick={() => window.print()}>
+                                        <Download size={16}/> Exportar Relatório (PDF)
+                                    </button>
+                                )}
                             </div>
                         </div>
                     ) : null}
