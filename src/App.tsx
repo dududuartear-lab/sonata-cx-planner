@@ -299,8 +299,21 @@ export default function App() {
     const endH    = Number(config.operationEndHour)  ||18;
     const opDays  = config.operationDays;
 
+    // Monta a sequência de horas, incluindo operações que cruzam meia-noite
+    // Ex: 12h às 2h → [12,13,...,23,0,1]
+    const opHours: number[] = [];
+    if (endH > startH) {
+      for (let h = startH; h < endH; h++) opHours.push(h);
+    } else if (endH < startH) {
+      for (let h = startH; h < 24; h++) opHours.push(h);
+      for (let h = 0; h < endH; h++) opHours.push(h);
+    } else {
+      // startH === endH: considera operação de 24h
+      for (let h = 0; h < 24; h++) opHours.push(h);
+    }
+
     const hourlyStaffing: HourlyPoint[] = [];
-    for (let h = startH; h < endH; h++) {
+    for (const h of opHours) {
       // Volume médio nesta hora = total desta hora nos dias de op / dias úteis do mês
       let hourTotal = 0;
       for (const d of opDays) hourTotal += lmHeatmap[d][h];
