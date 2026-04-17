@@ -134,7 +134,7 @@ export default function App() {
     reader.onload = (event: any) => {
       const text = event.target?.result as string; if (!text) return;
       const lines = text.split('\n');
-      if (lines.length < 2) { alert("Ficheiro vazio ou inválido."); return; }
+      if (lines.length < 2) { alert("Arquivo vazio ou inválido."); return; }
       const delim = lines[0].includes(';') ? ';' : ',';
       const headers = lines[0].split(delim).map((h:string) => h.trim().toLowerCase().replace(/["']/g,''));
       const parsed = lines.slice(1)
@@ -515,10 +515,10 @@ Seja direto e executivo. Não use saudações, não nomeie empresa ou pessoa —
 
           {/* Equipa e Jornada */}
           <section className="space-y-4">
-            <h3 className="text-sm font-black text-slate-600 uppercase tracking-widest flex items-center gap-2"><Users size={16}/> Equipa e Jornada</h3>
+            <h3 className="text-sm font-black text-slate-600 uppercase tracking-widest flex items-center gap-2"><Users size={16}/> Equipe e Jornada</h3>
             <div className="grid grid-cols-2 gap-3">
               <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200">
-                <label className="text-[10px] font-bold text-slate-500 uppercase mb-1 block">Equipa Atual</label>
+                <label className="text-[10px] font-bold text-slate-500 uppercase mb-1 block">Equipe Atual</label>
                 <input type="number" className="text-xl font-black w-full bg-transparent outline-none"
                   value={config.teamSize} onChange={(e:any)=>setConfig({...config,teamSize:e.target.value===''?'':parseInt(e.target.value)})}/>
               </div>
@@ -645,11 +645,11 @@ Seja direto e executivo. Não use saudações, não nomeie empresa ou pessoa —
               <div className="relative hover:scale-105 transition-transform">
                 <input id="csv-upload" type="file" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" accept=".csv" onChange={handleImport} title="Clique para importar"/>
                 <div className="bg-indigo-600 text-white px-10 py-5 rounded-full font-black text-xl shadow-xl shadow-indigo-200 flex items-center justify-center gap-3 cursor-pointer">
-                  <FileText size={24}/> Importar Ficheiro CSV
+                  <FileText size={24}/> Importar Arquivo CSV
                 </div>
               </div>
               <button onClick={handleDownloadTemplate} className="flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-indigo-600 transition-colors underline underline-offset-4">
-                <FileDown size={16}/> Descarregar Planilha de Exemplo (Template)
+                <FileDown size={16}/> Baixar Planilha de Exemplo (Template)
               </button>
             </div>
             <div className="bg-red-50 border border-red-200 p-6 rounded-2xl max-w-lg mx-auto text-left shadow-sm">
@@ -673,9 +673,9 @@ Seja direto e executivo. Não use saudações, não nomeie empresa ou pessoa —
             <div className="w-20 h-20 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mb-6">
               <FileText size={32}/>
             </div>
-            <h3 className="text-2xl font-black text-slate-900 mb-2">Ficheiro Importado com Sucesso!</h3>
+            <h3 className="text-2xl font-black text-slate-900 mb-2">Arquivo Importado com Sucesso!</h3>
             <p className="text-slate-500 mb-8 text-lg">
-              O ficheiro possui <strong>{s.total.toLocaleString()}</strong> contactos válidos.<br/><br/>
+              O arquivo possui <strong>{s.total.toLocaleString()}</strong> contatos válidos.<br/><br/>
               Preencha o campo <strong>Mercado da Empresa</strong> na barra lateral e clique em <strong>Gerar Relatório Estratégico</strong>.
             </p>
           </div>
@@ -719,7 +719,7 @@ Seja direto e executivo. Não use saudações, não nomeie empresa ou pessoa —
               {/* Equipa Necessária — CORRIGIDO: uma única classe bg-, texto visível */}
               <div className="bg-slate-900 p-6 rounded-3xl shadow-sm text-white">
                 <div className="text-slate-400 text-[10px] font-black uppercase tracking-widest flex items-center gap-1 mb-5">
-                  <Layout size={14}/> Equipa Necessária
+                  <Layout size={14}/> Equipe Necessária
                 </div>
                 <div className="flex justify-between items-center">
                   {config.phoneEnabled && Number(config.phoneAHT)>0 && (
@@ -796,7 +796,7 @@ Seja direto e executivo. Não use saudações, não nomeie empresa ou pessoa —
                   <p className="text-xs text-slate-500 mt-1">
                     Demanda horária por canal — baseada no padrão do último mês.
                     Jornada configurada: <strong>{config.shiftHours}h</strong>.
-                    Use este gráfico para planear entradas escalonadas e cobrir o pico sem sobrecarga.
+                    Use este gráfico para planejar entradas escalonadas e cobrir o pico sem sobrecarga.
                   </p>
                 </div>
                 <div style={{height:340}}>
@@ -832,7 +832,7 @@ Seja direto e executivo. Não use saudações, não nomeie empresa ou pessoa —
                   </ResponsiveContainer>
                 </div>
                 <p className="text-[10px] text-slate-400 mt-2 text-center">
-                  💡 Com turnos de {config.shiftHours}h, planeie as entradas para que o pico esteja sempre coberto. Analistas que entram antes do pico cobrem a rampa de crescimento; os que entram no pico garantem cobertura máxima.
+                  💡 Com turnos de {config.shiftHours}h, planeje as entradas para que o pico esteja sempre coberto. Analistas que entram antes do pico cobrem a rampa de crescimento; os que entram no pico garantem cobertura máxima.
                 </p>
               </div>
             )}
@@ -906,7 +906,7 @@ Seja direto e executivo. Não use saudações, não nomeie empresa ou pessoa —
                             <div key={hIdx} className="flex-1 rounded-sm relative group cursor-crosshair transition-all hover:ring-2 hover:ring-slate-900 hover:z-10 min-w-[24px]"
                               style={{backgroundColor:getHeatmapColor(val,s.maxHeatmapVal)}}>
                               <div className="absolute opacity-0 group-hover:opacity-100 bottom-full left-1/2 -translate-x-1/2 mb-2 bg-slate-900 text-white text-[10px] font-bold py-1 px-2 rounded whitespace-nowrap pointer-events-none z-50">
-                                {day}, {hIdx}h: {val} contactos
+                                {day}, {hIdx}h: {val} contatos
                               </div>
                             </div>
                           ))}
@@ -981,7 +981,7 @@ Seja direto e executivo. Não use saudações, não nomeie empresa ou pessoa —
                 {isAiLoading ? (
                   <div className="py-20 flex flex-col items-center justify-center text-indigo-300">
                     <div className="w-12 h-12 border-4 border-indigo-500/30 border-t-indigo-400 rounded-full animate-spin mb-4"/>
-                    <p className="text-sm font-bold tracking-widest uppercase animate-pulse">A analisar dados e a criar ponto de situação...</p>
+                    <p className="text-sm font-bold tracking-widest uppercase animate-pulse">Analisando dados e criando o parecer...</p>
                   </div>
                 ) : aiReport ? (
                   <div className="prose prose-invert prose-indigo max-w-none text-slate-300">
