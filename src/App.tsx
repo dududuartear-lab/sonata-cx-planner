@@ -21,11 +21,11 @@ import {
  * - Logo da Sonata no cabeçalho do Parecer Estratégico
  */
 
-const CHART_COLORS = ['#4F46E5','#818CF8','#C7D2FE','#312E81','#6366F1','#4338CA','#1E1B4B','#A5B4FC'];
+const CHART_COLORS = ['#4208af','#534794','#d9d7df','#1a0a30','#534794','#350a8a','#0f0820','#9b7fe8'];
 const WEEKDAYS     = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
 const DAY_LABELS   = ['D','S','T','Q','Q','S','S'];
 const DAY_FULL     = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
-const CHANNEL_COLORS = { telefone:'#4F46E5', chat:'#818CF8', email:'#C7D2FE' };
+const CHANNEL_COLORS = { telefone:'#4208af', chat:'#534794', email:'#d9d7df' };
 
 function countWorkingDaysInMonth(yearMonth: string, operationDays: number[]): number {
   const [year, month] = yearMonth.split('-').map(Number);
@@ -463,9 +463,9 @@ Seja direto e executivo. Não use saudações, não nomeie empresa ou pessoa —
   }) => (
     <div className={`bg-white p-5 rounded-2xl border shadow-sm transition-all ${enabled?'border-slate-200':'border-slate-100 opacity-50'}`}>
       <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2 text-indigo-600">{icon}<span className="text-xs font-black uppercase">{label}</span></div>
+        <div className="flex items-center gap-2 text-[#4208af]">{icon}<span className="text-xs font-black uppercase">{label}</span></div>
         <button onClick={onToggle}
-          className={`relative w-11 h-6 rounded-full transition-colors ${enabled?'bg-indigo-600':'bg-slate-200'}`}>
+          className={`relative w-11 h-6 rounded-full transition-colors ${enabled?'bg-[#4208af]':'bg-slate-200'}`}>
           <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${enabled?'translate-x-5':'translate-x-0'}`} />
         </button>
       </div>
@@ -491,10 +491,10 @@ Seja direto e executivo. Não use saudações, não nomeie empresa ou pessoa —
       {/* ────────────────────── SIDEBAR ────────────────────── */}
       <aside className="w-full lg:w-[400px] bg-white border-r border-slate-200 p-8 overflow-y-auto max-h-screen sticky top-0 shadow-lg z-50 flex flex-col">
         <div className="flex flex-col items-center mb-8 pb-6 border-b border-slate-100">
-          <div className="bg-indigo-600 p-3 flex items-center justify-center rounded-2xl mb-3 shadow-lg shadow-indigo-200 w-14 h-14">
-            <img src="/logo-branca.png" alt="Sonata CX Logo" className="w-8 h-8 object-contain"/>
+          <div className="bg-[#4208af] p-3 flex items-center justify-center rounded-2xl mb-3 shadow-lg shadow-[#c4a0f8] w-14 h-14">
+            <img src="/Logo Negativa.svg" alt="Sonata CX Logo" className="w-8 h-8 object-contain"/>
           </div>
-          <h1 className="text-2xl font-black text-slate-900 tracking-tight">sonata.cx <span className="text-indigo-600 italic">lab</span></h1>
+          <h1 className="text-2xl font-black text-slate-900 tracking-tight">sonata.cx <span className="text-[#4208af] italic">lab</span></h1>
           <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Capacity Planner v5.0</p>
         </div>
 
@@ -503,11 +503,11 @@ Seja direto e executivo. Não use saudações, não nomeie empresa ou pessoa —
           {/* Mercado */}
           <section>
             <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200">
-              <label className="text-xs font-black text-indigo-600 uppercase tracking-widest flex items-center gap-2 mb-2">
+              <label className="text-xs font-black text-[#4208af] uppercase tracking-widest flex items-center gap-2 mb-2">
                 <Building2 size={16}/> Mercado da Empresa
               </label>
               <input placeholder="Ex: E-commerce, Fintech..."
-                className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+                className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-[#534794] outline-none"
                 value={config.companyMarket}
                 onChange={(e:any)=>setConfig({...config,companyMarket:e.target.value})}/>
             </div>
@@ -534,7 +534,7 @@ Seja direto e executivo. Não use saudações, não nomeie empresa ou pessoa —
             </div>
             <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 flex justify-between items-center">
               <label className="text-xs font-bold text-slate-600 uppercase">Pausa Total (Min)</label>
-              <input type="number" className="text-right text-lg font-black w-20 bg-transparent outline-none text-indigo-600"
+              <input type="number" className="text-right text-lg font-black w-20 bg-transparent outline-none text-[#4208af]"
                 value={config.breakMinutes} onChange={(e:any)=>setConfig({...config,breakMinutes:e.target.value===''?'':parseInt(e.target.value)})}/>
             </div>
           </section>
@@ -549,7 +549,7 @@ Seja direto e executivo. Não use saudações, não nomeie empresa ou pessoa —
                   const active = config.operationDays.includes(idx);
                   return (
                     <button key={idx} onClick={()=>toggleDay(idx)}
-                      className={`flex-1 py-2 rounded-xl text-xs font-black transition-all ${active?'bg-indigo-600 text-white shadow-md shadow-indigo-200':'bg-white border border-slate-200 text-slate-400 hover:border-indigo-300'}`}>
+                      className={`flex-1 py-2 rounded-xl text-xs font-black transition-all ${active?'bg-[#4208af] text-white shadow-md shadow-[#c4a0f8]':'bg-white border border-slate-200 text-slate-400 hover:border-[#9b7fe8]'}`}>
                       {lbl}
                     </button>
                   );
@@ -562,14 +562,14 @@ Seja direto e executivo. Não use saudações, não nomeie empresa ou pessoa —
             <div className="grid grid-cols-2 gap-3">
               <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200">
                 <label className="text-[10px] font-bold text-slate-500 uppercase block mb-1">Início (hora)</label>
-                <input type="number" min={0} max={23} className="text-xl font-black w-full bg-transparent outline-none text-indigo-600"
+                <input type="number" min={0} max={23} className="text-xl font-black w-full bg-transparent outline-none text-[#4208af]"
                   value={config.operationStartHour}
                   onChange={(e:any)=>setConfig({...config,operationStartHour:Math.min(23,Math.max(0,parseInt(e.target.value)||0))})}/>
                 <span className="text-[10px] text-slate-400">ex: 8 = 08h00</span>
               </div>
               <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200">
                 <label className="text-[10px] font-bold text-slate-500 uppercase block mb-1">Fim (hora)</label>
-                <input type="number" min={1} max={24} className="text-xl font-black w-full bg-transparent outline-none text-indigo-600"
+                <input type="number" min={1} max={24} className="text-xl font-black w-full bg-transparent outline-none text-[#4208af]"
                   value={config.operationEndHour}
                   onChange={(e:any)=>setConfig({...config,operationEndHour:Math.min(24,Math.max(1,parseInt(e.target.value)||18))})}/>
                 <span className="text-[10px] text-slate-400">ex: 18 = 18h00</span>
@@ -599,10 +599,10 @@ Seja direto e executivo. Não use saudações, não nomeie empresa ou pessoa —
               tmaVal={config.chatAHT}
               onTma={(v)=>setConfig({...config,chatAHT:v===''?'':parseFloat(v)})}
               extra={
-                <div className="flex-1 bg-indigo-50 p-3 rounded-xl border border-indigo-100">
-                  <label className="text-[10px] font-black text-indigo-600 uppercase block mb-1">Simult.</label>
+                <div className="flex-1 bg-[#f5f0ff] p-3 rounded-xl border border-[#ede0ff]">
+                  <label className="text-[10px] font-black text-[#4208af] uppercase block mb-1">Simult.</label>
                   <select disabled={!config.chatEnabled}
-                    className="bg-transparent font-black text-sm outline-none text-indigo-600 w-full disabled:text-slate-300 cursor-pointer"
+                    className="bg-transparent font-black text-sm outline-none text-[#4208af] w-full disabled:text-slate-300 cursor-pointer"
                     value={config.chatConcurrency}
                     onChange={(e:any)=>setConfig({...config,chatConcurrency:parseInt(e.target.value)})}>
                     {[1,2,3,4,5,6,7,8].map((n:number)=><option key={n} value={n}>{n}x</option>)}
@@ -622,7 +622,7 @@ Seja direto e executivo. Não use saudações, não nomeie empresa ou pessoa —
 
         <div className="mt-8 pt-6 border-t border-slate-100">
           <button onClick={generateReportAndAI} disabled={!isLoaded||!config.companyMarket}
-            className="w-full bg-slate-900 hover:bg-indigo-600 text-white py-4 rounded-2xl font-black shadow-lg transition-all disabled:bg-slate-200 disabled:text-slate-400 flex items-center justify-center gap-2 active:scale-95">
+            className="w-full bg-slate-900 hover:bg-[#4208af] text-white py-4 rounded-2xl font-black shadow-lg transition-all disabled:bg-slate-200 disabled:text-slate-400 flex items-center justify-center gap-2 active:scale-95">
             {isAiLoading ? "A Analisar..." : <><Layout size={18}/> Gerar Relatório Estratégico</>}
           </button>
         </div>
@@ -634,7 +634,7 @@ Seja direto e executivo. Não use saudações, não nomeie empresa ou pessoa —
         {!isLoaded ? (
           <div className="h-full flex flex-col items-center justify-center text-center max-w-2xl mx-auto">
             <div className="mb-10 flex items-center justify-center hover:scale-105 transition-transform duration-500">
-              <img src="/logo-apresentacao.png" alt="Sonata CX" className="h-28 object-contain drop-shadow-sm"/>
+              <img src="/Logo Positiva.svg" alt="Sonata CX" className="h-28 object-contain drop-shadow-sm"/>
             </div>
             <h2 className="text-4xl font-black text-slate-900 mb-4 tracking-tight">Análise de Escala WFM</h2>
             <p className="text-slate-500 mb-10 text-lg">
@@ -644,11 +644,11 @@ Seja direto e executivo. Não use saudações, não nomeie empresa ou pessoa —
             <div className="flex flex-col items-center gap-4 mb-10">
               <div className="relative hover:scale-105 transition-transform">
                 <input id="csv-upload" type="file" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" accept=".csv" onChange={handleImport} title="Clique para importar"/>
-                <div className="bg-indigo-600 text-white px-10 py-5 rounded-full font-black text-xl shadow-xl shadow-indigo-200 flex items-center justify-center gap-3 cursor-pointer">
+                <div className="bg-[#4208af] text-white px-10 py-5 rounded-full font-black text-xl shadow-xl shadow-[#c4a0f8] flex items-center justify-center gap-3 cursor-pointer">
                   <FileText size={24}/> Importar Arquivo CSV
                 </div>
               </div>
-              <button onClick={handleDownloadTemplate} className="flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-indigo-600 transition-colors underline underline-offset-4">
+              <button onClick={handleDownloadTemplate} className="flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-[#4208af] transition-colors underline underline-offset-4">
                 <FileDown size={16}/> Baixar Planilha de Exemplo (Template)
               </button>
             </div>
@@ -865,7 +865,7 @@ Seja direto e executivo. Não use saudações, não nomeie empresa ou pessoa —
                   </p>
                 </div>
                 {selectedSubject && (
-                  <button onClick={()=>setSelectedSubject(null)} className="text-xs font-bold text-indigo-600 bg-indigo-50 px-4 py-2 rounded-full flex items-center gap-2 hover:bg-indigo-100 transition-colors">
+                  <button onClick={()=>setSelectedSubject(null)} className="text-xs font-bold text-[#4208af] bg-[#f5f0ff] px-4 py-2 rounded-full flex items-center gap-2 hover:bg-[#ede0ff] transition-colors">
                     <ArrowLeft size={14}/> Voltar Macro
                   </button>
                 )}
@@ -929,8 +929,8 @@ Seja direto e executivo. Não use saudações, não nomeie empresa ou pessoa —
               const weeklyH = shift === 8 ? 40 : shift === 6 ? 30 : 20;
               const needsCoverage = s.coverageFactor > 1;
               return (
-                <div className="bg-indigo-50 border border-indigo-100 rounded-3xl p-6 text-slate-700 text-sm space-y-3">
-                  <h4 className="font-black text-indigo-700 uppercase tracking-widest text-xs flex items-center gap-2">
+                <div className="bg-[#f5f0ff] border border-[#ede0ff] rounded-3xl p-6 text-slate-700 text-sm space-y-3">
+                  <h4 className="font-black text-[#4208af] uppercase tracking-widest text-xs flex items-center gap-2">
                     📋 Notas sobre o Cálculo de Escala por Hora
                   </h4>
                   <ul className="space-y-2 text-[13px] leading-relaxed">
@@ -954,7 +954,7 @@ Seja direto e executivo. Não use saudações, não nomeie empresa ou pessoa —
                       com jornadas de {shift}h que entram em horários diferentes cobrem o pico com
                       sobreposição controlada, sem superdimensionar o time em horários de baixo volume.
                     </li>
-                    <li className="text-indigo-500 font-medium">
+                    <li className="text-[#534794] font-medium">
                       ⚠ Este cálculo é uma estimativa baseada nos dados históricos e nos parâmetros
                       informados. O gestor de CX deve validar estes números com a realidade operacional
                       do time, considerando absenteísmo, turnover, sazonalidades e particularidades de
@@ -971,34 +971,34 @@ Seja direto e executivo. Não use saudações, não nomeie empresa ou pessoa —
               <div className="relative z-10">
                 <div className="flex items-center gap-4 mb-10 border-b border-white/10 pb-6">
                   <div className="bg-white p-2 rounded-2xl shadow-md flex items-center justify-center" style={{width:56,height:56}}>
-                    <img src="/logo-parecer.png" alt="Sonata CX" className="w-full h-full object-contain rounded-xl"/>
+                    <img src="/Logo Positiva.svg" alt="Sonata CX" className="w-full h-full object-contain rounded-xl"/>
                   </div>
                   <div>
                     <h3 className="text-3xl font-black tracking-tight text-white">Parecer Estratégico WFM</h3>
-                    <p className="text-indigo-400 text-sm font-bold uppercase tracking-widest mt-1">Sonata.cx • Powered by AI</p>
+                    <p className="text-[#534794] text-sm font-bold uppercase tracking-widest mt-1">Sonata.cx • Powered by AI</p>
                   </div>
                 </div>
                 {isAiLoading ? (
-                  <div className="py-20 flex flex-col items-center justify-center text-indigo-300">
-                    <div className="w-12 h-12 border-4 border-indigo-500/30 border-t-indigo-400 rounded-full animate-spin mb-4"/>
+                  <div className="py-20 flex flex-col items-center justify-center text-[#9b7fe8]">
+                    <div className="w-12 h-12 border-4 border-[#534794]/30 border-t-[#534794] rounded-full animate-spin mb-4"/>
                     <p className="text-sm font-bold tracking-widest uppercase animate-pulse">Analisando dados e criando o parecer...</p>
                   </div>
                 ) : aiReport ? (
-                  <div className="prose prose-invert prose-indigo max-w-none text-slate-300">
+                  <div className="prose prose-invert prose-slate max-w-none text-slate-300">
                     {aiReport.split('\n').map((p:string,i:number) => {
                       if (p.startsWith('###')) return <h3 key={i} className="text-xl font-bold text-white mt-6 mb-2">{p.replace('###','')}</h3>;
                       if (p.startsWith('##'))  return <h2 key={i} className="text-2xl font-black text-white mt-8 mb-4 border-b border-white/10 pb-2">{p.replace('##','')}</h2>;
-                      if (p.startsWith('#'))   return <h1 key={i} className="text-3xl font-black text-indigo-400 mt-6 mb-4">{p.replace('#','')}</h1>;
+                      if (p.startsWith('#'))   return <h1 key={i} className="text-3xl font-black text-[#534794] mt-6 mb-4">{p.replace('#','')}</h1>;
                       if (p.startsWith('-'))   return <li key={i} className="ml-4 mb-2">{p.replace('-','').trim()}</li>;
                       if (p.trim()==='')       return <br key={i}/>;
                       const html = p
                         .replace(/\*\*(.*?)\*\*/g,'<strong class="font-bold text-white">$1</strong>')
-                        .replace(/\[([^\]]+)\]\(([^)]+)\)/g,'<a href="$2" target="_blank" class="text-indigo-400 underline">$1</a>');
+                        .replace(/\[([^\]]+)\]\(([^)]+)\)/g,'<a href="$2" target="_blank" class="text-[#534794] underline">$1</a>');
                       return <p key={i} className="mb-4 leading-relaxed text-lg font-light" dangerouslySetInnerHTML={{__html:html}}/>;
                     })}
                     <div className="mt-12 pt-8 border-t border-white/10 flex justify-between items-center">
                       {isAiError ? (
-                        <button className="bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-3 rounded-full text-sm font-bold transition-colors flex items-center gap-2" onClick={generateReportAndAI}>
+                        <button className="bg-[#4208af] hover:bg-[#5a10d4] text-white px-6 py-3 rounded-full text-sm font-bold transition-colors flex items-center gap-2" onClick={generateReportAndAI}>
                           ↻ Tentar Novamente
                         </button>
                       ) : (
@@ -1030,7 +1030,7 @@ Seja direto e executivo. Não use saudações, não nomeie empresa ou pessoa —
           #chart-heatmap .custom-scrollbar > div { min-width: auto !important; }
 
           /* Notas sobre escala */
-          .bg-indigo-50 { background-color: #eef2ff !important; }
+          .bg-[#f5f0ff] { background-color: #eef2ff !important; }
 
           /* Parecer AI */
           #ai-report-section {
