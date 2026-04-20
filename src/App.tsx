@@ -464,7 +464,7 @@ export default function App() {
       <aside className="w-full lg:w-[400px] bg-white border-r border-slate-200 p-8 overflow-y-auto max-h-screen sticky top-0 shadow-lg z-50 flex flex-col">
         <div className="flex flex-col items-center mb-8 pb-6 border-b border-slate-100">
           <div className="bg-[#4208af] p-3 flex items-center justify-center rounded-2xl mb-3 shadow-lg shadow-[#c4a0f8] w-14 h-14">
-            <img src="/Ícone Negativo.png" alt="Sonata CX Logo" className="w-8 h-8 object-contain"/>
+            <img src="/Ícone Negativo.svg" alt="Sonata CX" className="w-8 h-8 object-contain"/>
           </div>
           <h1 className="text-2xl font-black text-slate-900 tracking-tight">sonata.cx <span className="text-[#4208af] italic">lab</span></h1>
           <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">{t('sidebar.version')}</p>
