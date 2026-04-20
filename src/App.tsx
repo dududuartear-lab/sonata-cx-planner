@@ -1,6 +1,8 @@
 /* eslint-disable @next/next/no-img-element */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
+import i18n from './i18n';
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer,
   PieChart, Pie, Cell, LineChart, Line, BarChart, Bar, Legend
@@ -19,12 +21,10 @@ import {
  * - Gráfico de evolução do volume por canal (área empilhada)
  * - Disclaimer estático sobre escala, jornada e limitações do cálculo
  * - Logo da Sonata no cabeçalho do Parecer Estratégico
+ * - i18n: PT / EN via react-i18next (lang query param or browser preference)
  */
 
 const CHART_COLORS = ['#4208af','#534794','#d9d7df','#1a0a30','#534794','#350a8a','#0f0820','#9b7fe8'];
-const WEEKDAYS     = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
-const DAY_LABELS   = ['D','S','T','Q','Q','S','S'];
-const DAY_FULL     = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
 const CHANNEL_COLORS = { telefone:'#4208af', chat:'#534794', email:'#d9d7df' };
 
 function countWorkingDaysInMonth(yearMonth: string, operationDays: number[]): number {
@@ -67,10 +67,7 @@ interface StatsType {
   monthlyTrend: { month: string; volume: number; telefone: number; chat: number; email: number }[];
   globalFCR: number; fcrTrend: { month: string; rate: number }[];
   hcIdeal: number; hcDist: { phone: number; chat: number; email: number };
-  // HC "bruto" antes do fator de cobertura (para referência)
   hcBase: number;
-  // Fator de cobertura: operationDays.length / 5 (mínimo 1)
-  // Garante que analistas com folgas cubram todos os dias de operação
   coverageFactor: number;
   pDist: { phone: number; chat: number; email: number };
   subjectsMap: Record<string, { total: number; motives: Record<string, number> }>;
@@ -91,6 +88,12 @@ const defaultStats: StatsType = {
 
 export default function App() {
   const apiKey = import.meta.env.VITE_SONATA_API;
+  const { t } = useTranslation();
+
+  // Day arrays derived from current locale
+  const WEEKDAYS  = t('days.short', { returnObjects: true }) as string[];
+  const DAY_LABELS = t('days.label', { returnObjects: true }) as string[];
+  const DAY_FULL   = t('days.full',  { returnObjects: true }) as string[];
 
   const [rawData, setRawData]                     = useState<TicketData[]>([]);
   const [isLoaded, setIsLoaded]                   = useState(false);
@@ -134,7 +137,7 @@ export default function App() {
     reader.onload = (event: any) => {
       const text = event.target?.result as string; if (!text) return;
       const lines = text.split('\n');
-      if (lines.length < 2) { alert("Arquivo vazio ou inválido."); return; }
+      if (lines.length < 2) { alert(t('import.emptyFile')); return; }
       const delim = lines[0].includes(';') ? ';' : ',';
       const headers = lines[0].split(delim).map((h:string) => h.trim().toLowerCase().replace(/["']/g,''));
       const parsed = lines.slice(1)
@@ -157,7 +160,7 @@ export default function App() {
           }
           return row as TicketData;
         }).filter((r:any) => r.isValidDate);
-      if (parsed.length === 0) { alert("Nenhuma linha com data válida encontrada."); return; }
+      if (parsed.length === 0) { alert(t('import.noValidRows')); return; }
       setRawData(parsed); setIsLoaded(true); setIsReportGenerated(false);
       setSelectedSubject(null); setAiReport("");
     };
@@ -167,7 +170,6 @@ export default function App() {
   const stats = useMemo<StatsType>(() => {
     if (!rawData.length) return defaultStats;
 
-    // ── Tendência mensal por canal ──────────────────────────────────────────
     const monthMap: Record<string,number> = {};
     const mChan:    Record<string,{telefone:number;chat:number;email:number}> = {};
     rawData.forEach((d:TicketData) => {
@@ -189,7 +191,6 @@ export default function App() {
       if (fv>0 && n>1) growth = Math.pow(lv/fv, 1/(n-1))-1;
     }
 
-    // ── Último mês ──────────────────────────────────────────────────────────
     const monthsKeys   = Object.keys(monthMap).sort();
     const lastMonthKey = monthsKeys[monthsKeys.length-1];
     const lmData: TicketData[] = rawData.filter((d:TicketData) => d.yearMonth===lastMonthKey);
@@ -202,47 +203,30 @@ export default function App() {
     const avgDailyVolLastMonth   = lmData.length / workingDaysInLastMonth;
     const total = lmData.length||1;
 
-    // Proporções de volume por canal no último mês
     const pPhone = lmChan.telefone / total;
     const pChat  = lmChan.chat     / total;
     const pEmail = lmChan.email    / total;
 
-    // ── Parâmetros de produtividade (somente TMA em minutos) ────────────────
     const phoneActive = config.phoneEnabled && Number(config.phoneAHT) > 0;
     const chatActive  = config.chatEnabled  && Number(config.chatAHT)  > 0;
     const emailActive = config.emailEnabled && Number(config.emailAHT) > 0;
 
-    const tmPhone = phoneActive ? Number(config.phoneAHT) : 0;  // minutos
-    const tmChat  = chatActive  ? Number(config.chatAHT)  : 0;  // minutos
-    const tmEmail = emailActive ? Number(config.emailAHT) : 0;  // minutos
+    const tmPhone = phoneActive ? Number(config.phoneAHT) : 0;
+    const tmChat  = chatActive  ? Number(config.chatAHT)  : 0;
+    const tmEmail = emailActive ? Number(config.emailAHT) : 0;
     const conc    = Number(config.chatConcurrency)||1;
 
-    // Tempo líquido de trabalho por agente por dia (em minutos)
     const netWorkMin = Math.max(1, (Number(config.shiftHours)||8)*60 - (Number(config.breakMinutes)||0));
 
-    // Carga de trabalho diária em minutos por canal:
-    //   Telefone/Email: 1 atendimento por vez → vol × TMA
-    //   Chat: simultaneidade → (vol / conc) × TMA
     const wlPhoneMin = (avgDailyVolLastMonth * pPhone) * tmPhone;
     const wlChatMin  = ((avgDailyVolLastMonth * pChat) / conc) * tmChat;
     const wlEmailMin = (avgDailyVolLastMonth * pEmail) * tmEmail;
 
-    // HC por canal com fator de ocupação de 82%
-    // hcBase = analistas para cobrir a DEMANDA de um único dia de operação
     const hcPhoneBase = phoneActive ? Math.ceil((wlPhoneMin / netWorkMin) / 0.82) : 0;
     const hcChatBase  = chatActive  ? Math.ceil((wlChatMin  / netWorkMin) / 0.82) : 0;
     const hcEmailBase = emailActive ? Math.ceil((wlEmailMin / netWorkMin) / 0.82) : 0;
     const hcBase = hcPhoneBase + hcChatBase + hcEmailBase;
 
-    // ── Fator de cobertura de folgas (escala 5×2) ───────────────────────────
-    // Cada analista trabalha 5 dias/semana e folga 2.
-    // Se a operação roda N dias/semana (N > 5), precisamos de N/5 vezes mais
-    // analistas para que todos os dias estejam cobertos quando uns estão de folga.
-    // Ex: operação 7 dias → fator 7/5 = 1,40 → +40% de headcount.
-    // Ex: operação 6 dias → fator 6/5 = 1,20 → +20% de headcount.
-    // Ex: operação 5 dias → fator 5/5 = 1,00 → sem acréscimo.
-    // Ex: operação ≤ 4 dias → todos os analistas conseguem cobrir todos os dias
-    //     sem sobreposição, portanto fator = 1 (sem acréscimo).
     const coverageFactor = Math.max(config.operationDays.length / 5, 1);
 
     const hcPhone = Math.ceil(hcPhoneBase * coverageFactor);
@@ -250,7 +234,6 @@ export default function App() {
     const hcEmail = Math.ceil(hcEmailBase * coverageFactor);
     const hcIdeal = hcPhone + hcChat + hcEmail;
 
-    // ── Recontato (FCR) ─────────────────────────────────────────────────────
     const sorted = [...rawData].sort((a,b) => a.dateObj.getTime()-b.dateObj.getTime());
     const clientHistory = new Map<string,Date>();
     const rcByMonth: Record<string,{total:number;recontacts:number}> = {};
@@ -271,7 +254,6 @@ export default function App() {
     }));
     const globalFCR = rawData.length>0 ? (totalRecontacts/rawData.length)*100 : 0;
 
-    // ── Assuntos / Motivos ──────────────────────────────────────────────────
     const subjectsMap: Record<string,{total:number;motives:Record<string,number>}> = {};
     rawData.forEach((d:TicketData) => {
       const ass = d.assunto||'Não Classificado', mot = d.motivo||'Não Classificado';
@@ -283,7 +265,6 @@ export default function App() {
       .map((k:string) => ({name:k,value:subjectsMap[k].total}))
       .sort((a:any,b:any) => b.value-a.value);
 
-    // ── Heatmap geral ───────────────────────────────────────────────────────
     const heatmapGrid = Array(7).fill(null).map(()=>Array(24).fill(0));
     let maxHeatmapVal = 0;
     rawData.forEach((d:TicketData) => {
@@ -291,7 +272,6 @@ export default function App() {
       if (heatmapGrid[d.day][d.hour]>maxHeatmapVal) maxHeatmapVal=heatmapGrid[d.day][d.hour];
     });
 
-    // ── Staffing por hora (baseado no padrão do último mês) ─────────────────
     const lmHeatmap = Array(7).fill(null).map(()=>Array(24).fill(0));
     lmData.forEach((d:TicketData) => { lmHeatmap[d.day][d.hour]++; });
 
@@ -299,8 +279,6 @@ export default function App() {
     const endH    = Number(config.operationEndHour)  ||18;
     const opDays  = config.operationDays;
 
-    // Monta a sequência de horas, incluindo operações que cruzam meia-noite
-    // Ex: 12h às 2h → [12,13,...,23,0,1]
     const opHours: number[] = [];
     if (endH > startH) {
       for (let h = startH; h < endH; h++) opHours.push(h);
@@ -308,19 +286,15 @@ export default function App() {
       for (let h = startH; h < 24; h++) opHours.push(h);
       for (let h = 0; h < endH; h++) opHours.push(h);
     } else {
-      // startH === endH: considera operação de 24h
       for (let h = 0; h < 24; h++) opHours.push(h);
     }
 
     const hourlyStaffing: HourlyPoint[] = [];
     for (const h of opHours) {
-      // Volume médio nesta hora = total desta hora nos dias de op / dias úteis do mês
       let hourTotal = 0;
       for (const d of opDays) hourTotal += lmHeatmap[d][h];
       const avgHourVol = hourTotal / workingDaysInLastMonth;
 
-      // Analistas: vol × TMA(min) / 60 → horas de trabalho necessárias naquela hora
-      // dividido por ocupação 82%
       const agPhone = phoneActive && tmPhone>0
         ? Math.ceil((avgHourVol*pPhone*tmPhone/60)/0.82) : 0;
       const agChat  = chatActive  && tmChat>0
@@ -372,45 +346,44 @@ export default function App() {
 
   const generateReportAndAI = async () => {
     setIsReportGenerated(true); setIsAiLoading(true); setIsAiError(false); setAiReport("");
+
     const activeChannels = [
-      config.phoneEnabled && Number(config.phoneAHT)>0 ? `Telefone (TMA: ${config.phoneAHT} min)` : null,
-      config.chatEnabled  && Number(config.chatAHT) >0 ? `Chat (TMA: ${config.chatAHT} min, simultaneidade: ${config.chatConcurrency}x)` : null,
-      config.emailEnabled && Number(config.emailAHT)>0 ? `E-mail (TMA: ${config.emailAHT} min)` : null,
+      config.phoneEnabled && Number(config.phoneAHT)>0
+        ? `${t('charts.phone')} (AHT: ${config.phoneAHT} min)` : null,
+      config.chatEnabled  && Number(config.chatAHT) >0
+        ? `${t('charts.chat')} (AHT: ${config.chatAHT} min, ${t('sidebar.channels.concLabel').toLowerCase()}: ${config.chatConcurrency}x)` : null,
+      config.emailEnabled && Number(config.emailAHT)>0
+        ? `${t('charts.email')} (AHT: ${config.emailAHT} min)` : null,
     ].filter(Boolean).join(', ');
+
     const opDaysLabel = config.operationDays.map((d:number) => DAY_FULL[d]).join(', ');
     const peakHour = s.hourlyStaffing.reduce((best,cur) => cur.total>best.total ? cur : best, {hour:'-',total:0,telefone:0,chat:0,email:0});
-
     const weeklyHours = Number(config.shiftHours) === 8 ? '40h' : Number(config.shiftHours) === 6 ? '30h' : '20h';
 
-    const prompt = `
-[INSTRUÇÃO DE SISTEMA]: Você é um consultor sênior da Sonata.cx. Use formatação Markdown.
+    const prompt = t('aiPrompt', {
+      market:        config.companyMarket,
+      opDaysLabel,
+      startH:        config.operationStartHour,
+      endH:          config.operationEndHour,
+      shift:         config.shiftHours,
+      weekly:        weeklyHours,
+      teamSize:      config.teamSize,
+      hcIdeal:       s.hcIdeal,
+      hcPhone:       s.hcDist.phone,
+      hcChat:        s.hcDist.chat,
+      hcEmail:       s.hcDist.email,
+      activeChannels,
+      pPhone:        s.pDist.phone,
+      pChat:         s.pDist.chat,
+      pEmail:        s.pDist.email,
+      avgVol:        s.avgDailyVolLastMonth,
+      workingDays:   s.workingDaysInLastMonth,
+      growth:        (s.growth*100).toFixed(1),
+      fcr:           s.globalFCR.toFixed(1),
+      peakHour:      peakHour.hour,
+      peakTotal:     peakHour.total,
+    });
 
-Atue como Consultor de CX Sênior com foco em Workforce Management (WFM).
-
-DADOS DA OPERAÇÃO:
-- Mercado: ${config.companyMarket}
-- Operação: ${opDaysLabel} | ${config.operationStartHour}h–${config.operationEndHour}h | Jornada ${config.shiftHours}h/dia | ${weeklyHours} semanais | Escala 5×2
-- Headcount Atual: ${config.teamSize} | Headcount Ideal: ${s.hcIdeal} (Voz: ${s.hcDist.phone} | Chat: ${s.hcDist.chat} | E-mail: ${s.hcDist.email})
-- Canais e TMA: ${activeChannels}
-- Volume por canal: Telefone ${s.pDist.phone}% | Chat ${s.pDist.chat}% | E-mail ${s.pDist.email}%
-- Volume Médio Diário: ${s.avgDailyVolLastMonth} tickets/dia (${s.workingDaysInLastMonth} dias úteis/mês)
-- Crescimento Mensal: ${(s.growth*100).toFixed(1)}% | Taxa de Recontato (14d): ${s.globalFCR.toFixed(1)}%
-- Hora de pico: ${peakHour.hour} (${peakHour.total} analistas simultâneos)
-
-REGRAS DO RELATÓRIO:
-
-Seja direto e executivo. Não use saudações, não nomeie empresa ou pessoa — o relatório será exibido na tela do cliente. Não repita informações entre seções. Cada ponto deve agregar algo novo.
-
-1. Abra analisando o cenário de dimensionamento: compare HC Atual vs Ideal, mostre a distribuição por canal e explique em uma frase como o TMA afeta o HC (sem detalhar o cálculo — o disclaimer já explica).
-2. Analise os canais ativos. Cada canal tem uma frase sobre sua peculiaridade: e-mail (eficiência em lote vs. complexidade dependendo do processo), chat (simultaneidade vs. tempo de resposta do cliente), telefone (custo unitário alto, 1 analista por atendimento). Finalize comentando que o mix de canais é uma decisão estratégica.
-3. Aplique SOMENTE UM dos cenários abaixo, conforme os números:
-   - SE HC Ideal > (Atual × 1.15): recomendar automação e canais de autoatendimento (chatbot, FAQ interativo, base de conhecimento pública) antes de contratar. Tecnologia: cara e demorada, mas altamente escalável. Processos: rápidos e razoavelmente escaláveis. Contratação: lenta e pouco escalável.
-   - SE HC Atual > HC Ideal E Crescimento > 10%: questionar se há justificativa para o excesso (crescimento acelerado previsto?), estimar quando o volume tornará o time insuficiente e reforçar que é o momento ideal para CSAT, NPS e qualidade.
-   - SE HC Atual muito acima do HC Ideal (>15%): apontar como ponto de atenção e sugerir revisão das funções dos analistas.
-   - SE equilibrado E Crescimento < 10%: foco em qualidade, processos e redução de TMA.
-4. Comente a hora de pico (${peakHour.hour}) e como o gráfico de analistas por hora do dashboard ajuda a planejar turnos escalonados.
-5. Encerre com uma menção discreta à Sonata.cx como parceira estratégica de CX e WFM.
-    `;
     try {
       const url = `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
       const resp = await fetch(url, {
@@ -456,7 +429,6 @@ Seja direto e executivo. Não use saudações, não nomeie empresa ou pessoa —
 
   const hcColors = getHcColorConfig();
 
-  // ── Componente reutilizável para configuração de canal ─────────────────────
   const ChannelCard = ({label, icon, enabled, onToggle, tmaVal, onTma, extra}: {
     label:string; icon:React.ReactNode; enabled:boolean; onToggle:()=>void;
     tmaVal:number|string; onTma:(v:string)=>void; extra?:React.ReactNode;
@@ -471,7 +443,7 @@ Seja direto e executivo. Não use saudações, não nomeie empresa ou pessoa —
       </div>
       <div className="flex gap-3">
         <div className="flex-1 bg-slate-50 p-3 rounded-xl">
-          <label className="text-[10px] font-bold text-slate-500 uppercase block mb-1">TMA (min)</label>
+          <label className="text-[10px] font-bold text-slate-500 uppercase block mb-1">{t('sidebar.channels.tmaLabel')}</label>
           <input type="number" min={0} step={0.5} disabled={!enabled}
             className="w-full font-black text-base bg-transparent outline-none disabled:text-slate-300"
             value={tmaVal} onChange={(e:any)=>onTma(e.target.value)} />
@@ -479,9 +451,9 @@ Seja direto e executivo. Não use saudações, não nomeie empresa ou pessoa —
         {extra}
       </div>
       {enabled && Number(tmaVal)===0 && (
-        <p className="text-[10px] text-amber-500 mt-2 font-medium">⚠ TMA = 0: canal ignorado no cálculo</p>
+        <p className="text-[10px] text-amber-500 mt-2 font-medium">{t('sidebar.channels.tmaZeroWarning')}</p>
       )}
-      {!enabled && <p className="text-[10px] text-slate-400 mt-2 font-medium">Canal desativado — excluído do cálculo</p>}
+      {!enabled && <p className="text-[10px] text-slate-400 mt-2 font-medium">{t('sidebar.channels.disabledNote')}</p>}
     </div>
   );
 
@@ -495,55 +467,61 @@ Seja direto e executivo. Não use saudações, não nomeie empresa ou pessoa —
             <img src="/Logo Negativa.svg" alt="Sonata CX Logo" className="w-8 h-8 object-contain"/>
           </div>
           <h1 className="text-2xl font-black text-slate-900 tracking-tight">sonata.cx <span className="text-[#4208af] italic">lab</span></h1>
-          <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Capacity Planner v5.0</p>
+          <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">{t('sidebar.version')}</p>
+          {/* Language switcher */}
+          <button
+            onClick={() => i18n.changeLanguage(i18n.language.startsWith('en') ? 'pt' : 'en')}
+            className="mt-3 text-[10px] font-bold text-slate-400 hover:text-[#4208af] transition-colors uppercase tracking-widest">
+            {t('lang.switch')}
+          </button>
         </div>
 
         <div className="space-y-8 flex-1">
 
-          {/* Mercado */}
+          {/* Market */}
           <section>
             <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200">
               <label className="text-xs font-black text-[#4208af] uppercase tracking-widest flex items-center gap-2 mb-2">
-                <Building2 size={16}/> Mercado da Empresa
+                <Building2 size={16}/> {t('sidebar.market.label')}
               </label>
-              <input placeholder="Ex: E-commerce, Fintech..."
+              <input placeholder={t('sidebar.market.placeholder')}
                 className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-[#534794] outline-none"
                 value={config.companyMarket}
                 onChange={(e:any)=>setConfig({...config,companyMarket:e.target.value})}/>
             </div>
           </section>
 
-          {/* Equipa e Jornada */}
+          {/* Team & Schedule */}
           <section className="space-y-4">
-            <h3 className="text-sm font-black text-slate-600 uppercase tracking-widest flex items-center gap-2"><Users size={16}/> Equipe e Jornada</h3>
+            <h3 className="text-sm font-black text-slate-600 uppercase tracking-widest flex items-center gap-2"><Users size={16}/> {t('sidebar.team.heading')}</h3>
             <div className="grid grid-cols-2 gap-3">
               <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200">
-                <label className="text-[10px] font-bold text-slate-500 uppercase mb-1 block">Equipe Atual</label>
+                <label className="text-[10px] font-bold text-slate-500 uppercase mb-1 block">{t('sidebar.team.current')}</label>
                 <input type="number" className="text-xl font-black w-full bg-transparent outline-none"
                   value={config.teamSize} onChange={(e:any)=>setConfig({...config,teamSize:e.target.value===''?'':parseInt(e.target.value)})}/>
               </div>
               <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200">
-                <label className="text-[10px] font-bold text-slate-500 uppercase mb-1 block">Carga Horária</label>
+                <label className="text-[10px] font-bold text-slate-500 uppercase mb-1 block">{t('sidebar.team.shift')}</label>
                 <select className="text-base font-black w-full bg-transparent outline-none cursor-pointer"
                   value={config.shiftHours} onChange={(e:any)=>setConfig({...config,shiftHours:parseInt(e.target.value)})}>
-                  <option value={4}>4h diárias</option>
-                  <option value={6}>6h diárias</option>
-                  <option value={8}>8h diárias</option>
+                  <option value={4}>{t('sidebar.team.shift4')}</option>
+                  <option value={6}>{t('sidebar.team.shift6')}</option>
+                  <option value={8}>{t('sidebar.team.shift8')}</option>
                 </select>
               </div>
             </div>
             <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 flex justify-between items-center">
-              <label className="text-xs font-bold text-slate-600 uppercase">Pausa Total (Min)</label>
+              <label className="text-xs font-bold text-slate-600 uppercase">{t('sidebar.team.break')}</label>
               <input type="number" className="text-right text-lg font-black w-20 bg-transparent outline-none text-[#4208af]"
                 value={config.breakMinutes} onChange={(e:any)=>setConfig({...config,breakMinutes:e.target.value===''?'':parseInt(e.target.value)})}/>
             </div>
           </section>
 
-          {/* Horário de Operação */}
+          {/* Operating Hours */}
           <section className="space-y-4">
-            <h3 className="text-sm font-black text-slate-600 uppercase tracking-widest flex items-center gap-2"><Clock size={16}/> Horário de Operação</h3>
+            <h3 className="text-sm font-black text-slate-600 uppercase tracking-widest flex items-center gap-2"><Clock size={16}/> {t('sidebar.schedule.heading')}</h3>
             <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200">
-              <label className="text-[10px] font-bold text-slate-500 uppercase block mb-3">Dias de Funcionamento</label>
+              <label className="text-[10px] font-bold text-slate-500 uppercase block mb-3">{t('sidebar.schedule.daysLabel')}</label>
               <div className="flex gap-1 justify-between">
                 {DAY_LABELS.map((lbl:string,idx:number) => {
                   const active = config.operationDays.includes(idx);
@@ -556,51 +534,51 @@ Seja direto e executivo. Não use saudações, não nomeie empresa ou pessoa —
                 })}
               </div>
               <p className="text-[10px] text-slate-400 mt-2">
-                {config.operationDays.length===7?'Operação 7 dias por semana':`${config.operationDays.length} dia(s) por semana`}
+                {config.operationDays.length===7
+                  ? t('sidebar.schedule.days7')
+                  : t('sidebar.schedule.daysN', { n: config.operationDays.length })}
               </p>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200">
-                <label className="text-[10px] font-bold text-slate-500 uppercase block mb-1">Início (hora)</label>
+                <label className="text-[10px] font-bold text-slate-500 uppercase block mb-1">{t('sidebar.schedule.start')}</label>
                 <input type="number" min={0} max={23} className="text-xl font-black w-full bg-transparent outline-none text-[#4208af]"
                   value={config.operationStartHour}
                   onChange={(e:any)=>setConfig({...config,operationStartHour:Math.min(23,Math.max(0,parseInt(e.target.value)||0))})}/>
-                <span className="text-[10px] text-slate-400">ex: 8 = 08h00</span>
+                <span className="text-[10px] text-slate-400">{t('sidebar.schedule.startHint')}</span>
               </div>
               <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200">
-                <label className="text-[10px] font-bold text-slate-500 uppercase block mb-1">Fim (hora)</label>
+                <label className="text-[10px] font-bold text-slate-500 uppercase block mb-1">{t('sidebar.schedule.end')}</label>
                 <input type="number" min={1} max={24} className="text-xl font-black w-full bg-transparent outline-none text-[#4208af]"
                   value={config.operationEndHour}
                   onChange={(e:any)=>setConfig({...config,operationEndHour:Math.min(24,Math.max(1,parseInt(e.target.value)||18))})}/>
-                <span className="text-[10px] text-slate-400">ex: 18 = 18h00</span>
+                <span className="text-[10px] text-slate-400">{t('sidebar.schedule.endHint')}</span>
               </div>
             </div>
           </section>
 
-          {/* Canais e TMA */}
+          {/* Channels & AHT */}
           <section className="space-y-4">
             <div>
-              <h3 className="text-sm font-black text-slate-600 uppercase tracking-widest flex items-center gap-2"><Timer size={16}/> Canais e TMA</h3>
-              <p className="text-[10px] text-slate-400 mt-1 leading-relaxed">
-                TMA em minutos (frações permitidas, ex: 0.5). Canal desativado ou TMA = 0 → ignorado no cálculo de headcount.
-              </p>
+              <h3 className="text-sm font-black text-slate-600 uppercase tracking-widest flex items-center gap-2"><Timer size={16}/> {t('sidebar.channels.heading')}</h3>
+              <p className="text-[10px] text-slate-400 mt-1 leading-relaxed">{t('sidebar.channels.hint')}</p>
             </div>
 
-            <ChannelCard label="Voz / Telefone" icon={<Headset size={18}/>}
+            <ChannelCard label={t('sidebar.channels.phone')} icon={<Headset size={18}/>}
               enabled={config.phoneEnabled}
               onToggle={()=>setConfig({...config,phoneEnabled:!config.phoneEnabled})}
               tmaVal={config.phoneAHT}
               onTma={(v)=>setConfig({...config,phoneAHT:v===''?'':parseFloat(v)})}
             />
 
-            <ChannelCard label="Chat / Messaging" icon={<MousePointer2 size={18}/>}
+            <ChannelCard label={t('sidebar.channels.chat')} icon={<MousePointer2 size={18}/>}
               enabled={config.chatEnabled}
               onToggle={()=>setConfig({...config,chatEnabled:!config.chatEnabled})}
               tmaVal={config.chatAHT}
               onTma={(v)=>setConfig({...config,chatAHT:v===''?'':parseFloat(v)})}
               extra={
                 <div className="flex-1 bg-[#f5f0ff] p-3 rounded-xl border border-[#ede0ff]">
-                  <label className="text-[10px] font-black text-[#4208af] uppercase block mb-1">Simult.</label>
+                  <label className="text-[10px] font-black text-[#4208af] uppercase block mb-1">{t('sidebar.channels.concLabel')}</label>
                   <select disabled={!config.chatEnabled}
                     className="bg-transparent font-black text-sm outline-none text-[#4208af] w-full disabled:text-slate-300 cursor-pointer"
                     value={config.chatConcurrency}
@@ -611,7 +589,7 @@ Seja direto e executivo. Não use saudações, não nomeie empresa ou pessoa —
               }
             />
 
-            <ChannelCard label="E-mail / Tickets" icon={<Mail size={18}/>}
+            <ChannelCard label={t('sidebar.channels.email')} icon={<Mail size={18}/>}
               enabled={config.emailEnabled}
               onToggle={()=>setConfig({...config,emailEnabled:!config.emailEnabled})}
               tmaVal={config.emailAHT}
@@ -623,7 +601,9 @@ Seja direto e executivo. Não use saudações, não nomeie empresa ou pessoa —
         <div className="mt-8 pt-6 border-t border-slate-100">
           <button onClick={generateReportAndAI} disabled={!isLoaded||!config.companyMarket}
             className="w-full bg-slate-900 hover:bg-[#4208af] text-white py-4 rounded-2xl font-black shadow-lg transition-all disabled:bg-slate-200 disabled:text-slate-400 flex items-center justify-center gap-2 active:scale-95">
-            {isAiLoading ? "A Analisar..." : <><Layout size={18}/> Gerar Relatório Estratégico</>}
+            {isAiLoading
+              ? t('sidebar.reportBtn.analyzing')
+              : <><Layout size={18}/> {t('sidebar.reportBtn.generate')}</>}
           </button>
         </div>
       </aside>
@@ -636,32 +616,32 @@ Seja direto e executivo. Não use saudações, não nomeie empresa ou pessoa —
             <div className="mb-10 flex items-center justify-center hover:scale-105 transition-transform duration-500">
               <img src="/Logo Positiva.svg" alt="Sonata CX" className="h-28 object-contain drop-shadow-sm"/>
             </div>
-            <h2 className="text-4xl font-black text-slate-900 mb-4 tracking-tight">Análise de Escala WFM</h2>
+            <h2 className="text-4xl font-black text-slate-900 mb-4 tracking-tight">{t('upload.title')}</h2>
             <p className="text-slate-500 mb-10 text-lg">
-              Faça o upload do histórico de tickets (CSV) com as colunas:<br/>
-              <span className="font-mono text-sm bg-white p-1 rounded">data_hora_entrada, client_id, canal, assunto, motivo</span>
+              {t('upload.description')}<br/>
+              <span className="font-mono text-sm bg-white p-1 rounded">{t('upload.columns')}</span>
             </p>
             <div className="flex flex-col items-center gap-4 mb-10">
               <div className="relative hover:scale-105 transition-transform">
-                <input id="csv-upload" type="file" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" accept=".csv" onChange={handleImport} title="Clique para importar"/>
+                <input id="csv-upload" type="file" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" accept=".csv" onChange={handleImport} title={t('upload.importBtn')}/>
                 <div className="bg-[#4208af] text-white px-10 py-5 rounded-full font-black text-xl shadow-xl shadow-[#c4a0f8] flex items-center justify-center gap-3 cursor-pointer">
-                  <FileText size={24}/> Importar Arquivo CSV
+                  <FileText size={24}/> {t('upload.importBtn')}
                 </div>
               </div>
               <button onClick={handleDownloadTemplate} className="flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-[#4208af] transition-colors underline underline-offset-4">
-                <FileDown size={16}/> Baixar Planilha de Exemplo (Template)
+                <FileDown size={16}/> {t('import.templateBtn')}
               </button>
             </div>
             <div className="bg-red-50 border border-red-200 p-6 rounded-2xl max-w-lg mx-auto text-left shadow-sm">
               <div className="flex items-start gap-3">
                 <AlertTriangle className="text-red-500 shrink-0 mt-1" size={24}/>
                 <div>
-                  <h4 className="text-red-800 font-bold text-sm uppercase tracking-wider mb-2">Aviso de Segurança (LGPD/RGPD)</h4>
+                  <h4 className="text-red-800 font-bold text-sm uppercase tracking-wider mb-2">{t('upload.security.title')}</h4>
                   <p className="text-red-700 text-xs leading-relaxed mb-2">
-                    <strong>Não faça upload de informações sensíveis ou dados reais de clientes.</strong> Recomendamos mascarar a coluna <code className="bg-red-100 px-1 py-0.5 rounded font-mono">client_id</code>. Não utilize E-mails, CPFs ou Nomes reais.
+                    <strong>{t('upload.security.line1')}</strong> {t('upload.security.line2')} <code className="bg-red-100 px-1 py-0.5 rounded font-mono">client_id</code>{t('upload.security.line3')}
                   </p>
                   <p className="text-red-700 text-xs leading-relaxed opacity-90">
-                    Os dados brutos são processados localmente no navegador. Apenas KPIs consolidados são enviados à IA (Google Gemini) para geração do parecer.
+                    {t('upload.security.line4')}
                   </p>
                 </div>
               </div>
@@ -673,10 +653,10 @@ Seja direto e executivo. Não use saudações, não nomeie empresa ou pessoa —
             <div className="w-20 h-20 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mb-6">
               <FileText size={32}/>
             </div>
-            <h3 className="text-2xl font-black text-slate-900 mb-2">Arquivo Importado com Sucesso!</h3>
+            <h3 className="text-2xl font-black text-slate-900 mb-2">{t('loaded.title')}</h3>
             <p className="text-slate-500 mb-8 text-lg">
-              O arquivo possui <strong>{s.total.toLocaleString()}</strong> contatos válidos.<br/><br/>
-              Preencha o campo <strong>Mercado da Empresa</strong> na barra lateral e clique em <strong>Gerar Relatório Estratégico</strong>.
+              {t('loaded.desc1')} <strong>{s.total.toLocaleString()}</strong> {t('loaded.desc2')}<br/><br/>
+              {t('loaded.desc3')} <strong>{t('loaded.desc4')}</strong> {t('loaded.desc5')} <strong>{t('loaded.desc6')}</strong>.
             </p>
           </div>
 
@@ -686,40 +666,40 @@ Seja direto e executivo. Não use saudações, não nomeie empresa ou pessoa —
             {/* ── KPI CARDS ────────────────────────────────────── */}
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
 
-              {/* Headcount Ideal */}
+              {/* Ideal Headcount */}
               <div className="p-6 rounded-3xl border border-slate-200 shadow-sm relative overflow-hidden group bg-white">
                 <div className={`absolute -right-4 -top-4 w-24 h-24 rounded-full group-hover:scale-150 transition-transform duration-500 -z-10 ${hcColors.bg}`}/>
                 <div className="flex justify-between items-start mb-4">
                   <div className={`text-[10px] font-black uppercase tracking-widest flex items-center gap-1 ${hcColors.icon}`}>
-                    <Users size={14}/> Headcount Ideal
+                    <Users size={14}/> {t('kpi.hcIdeal')}
                   </div>
                   <span className="bg-slate-100 text-slate-500 text-[10px] font-bold px-2 py-1 rounded">vs {config.teamSize}</span>
                 </div>
                 <div className={`text-5xl font-black mb-1 ${hcColors.text}`}>{s.hcIdeal}</div>
-                <div className="text-[11px] text-slate-500 font-medium">Vol Diário Ref: {s.avgDailyVolLastMonth} tickets</div>
-                <div className="text-[10px] text-slate-400 mt-1">{s.workingDaysInLastMonth} dias úteis no mês</div>
+                <div className="text-[11px] text-slate-500 font-medium">{t('kpi.dailyVol', { n: s.avgDailyVolLastMonth })}</div>
+                <div className="text-[10px] text-slate-400 mt-1">{t('kpi.workingDays', { n: s.workingDaysInLastMonth })}</div>
               </div>
 
-              {/* Crescimento */}
+              {/* Growth */}
               <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm relative overflow-hidden group">
                 <div className="absolute -right-4 -top-4 w-24 h-24 bg-slate-50 rounded-full group-hover:scale-150 transition-transform duration-500 -z-10"/>
-                <div className="text-slate-400 text-[10px] font-black uppercase tracking-widest flex items-center gap-1 mb-4"><TrendingUp size={14}/> Crescimento (MoM)</div>
+                <div className="text-slate-400 text-[10px] font-black uppercase tracking-widest flex items-center gap-1 mb-4"><TrendingUp size={14}/> {t('kpi.growth')}</div>
                 <div className="text-5xl font-black text-slate-900 mb-1">{(s.growth*100).toFixed(1)}%</div>
-                <div className="text-[11px] text-slate-500 font-medium">Taxa composta mensal</div>
+                <div className="text-[11px] text-slate-500 font-medium">{t('kpi.growthSub')}</div>
               </div>
 
-              {/* Recontato */}
+              {/* Recontact */}
               <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm relative overflow-hidden group">
                 <div className="absolute -right-4 -top-4 w-24 h-24 bg-slate-50 rounded-full group-hover:scale-150 transition-transform duration-500 -z-10"/>
-                <div className="text-slate-400 text-[10px] font-black uppercase tracking-widest flex items-center gap-1 mb-4"><AlertTriangle size={14}/> Taxa de Recontato</div>
+                <div className="text-slate-400 text-[10px] font-black uppercase tracking-widest flex items-center gap-1 mb-4"><AlertTriangle size={14}/> {t('kpi.recontact')}</div>
                 <div className="text-5xl font-black text-slate-900 mb-1">{s.globalFCR.toFixed(1)}%</div>
-                <div className="text-[11px] text-slate-500 font-medium">Janela de 14 dias p/ cliente</div>
+                <div className="text-[11px] text-slate-500 font-medium">{t('kpi.recontactSub')}</div>
               </div>
 
-              {/* Equipa Necessária — CORRIGIDO: uma única classe bg-, texto visível */}
+              {/* Required Team */}
               <div className="bg-slate-900 p-6 rounded-3xl shadow-sm text-white">
                 <div className="text-slate-400 text-[10px] font-black uppercase tracking-widest flex items-center gap-1 mb-5">
-                  <Layout size={14}/> Equipe Necessária
+                  <Layout size={14}/> {t('kpi.required')}
                 </div>
                 <div className="flex justify-between items-center">
                   {config.phoneEnabled && Number(config.phoneAHT)>0 && (
@@ -727,8 +707,8 @@ Seja direto e executivo. Não use saudações, não nomeie empresa ou pessoa —
                       <div className="text-center flex-1">
                         <div className="text-3xl font-black text-white">{s.hcDist.phone}</div>
                         <Headset size={12} className="mx-auto mt-2 text-slate-400"/>
-                        <div className="text-[9px] uppercase tracking-wider text-slate-400">Voz</div>
-                        <div className="text-[10px] text-slate-500 mt-0.5">{s.pDist.phone}% vol</div>
+                        <div className="text-[9px] uppercase tracking-wider text-slate-400">{t('kpi.voice')}</div>
+                        <div className="text-[10px] text-slate-500 mt-0.5">{s.pDist.phone}{t('kpi.volPct')}</div>
                       </div>
                       <div className="w-px h-14 bg-slate-700"/>
                     </>
@@ -738,8 +718,8 @@ Seja direto e executivo. Não use saudações, não nomeie empresa ou pessoa —
                       <div className="text-center flex-1">
                         <div className="text-3xl font-black text-white">{s.hcDist.chat}</div>
                         <MousePointer2 size={12} className="mx-auto mt-2 text-slate-400"/>
-                        <div className="text-[9px] uppercase tracking-wider text-slate-400">Chat</div>
-                        <div className="text-[10px] text-slate-500 mt-0.5">{s.pDist.chat}% vol</div>
+                        <div className="text-[9px] uppercase tracking-wider text-slate-400">{t('kpi.chat')}</div>
+                        <div className="text-[10px] text-slate-500 mt-0.5">{s.pDist.chat}{t('kpi.volPct')}</div>
                       </div>
                       <div className="w-px h-14 bg-slate-700"/>
                     </>
@@ -748,24 +728,24 @@ Seja direto e executivo. Não use saudações, não nomeie empresa ou pessoa —
                     <div className="text-center flex-1">
                       <div className="text-3xl font-black text-white">{s.hcDist.email}</div>
                       <Mail size={12} className="mx-auto mt-2 text-slate-400"/>
-                      <div className="text-[9px] uppercase tracking-wider text-slate-400">E-mail</div>
-                      <div className="text-[10px] text-slate-500 mt-0.5">{s.pDist.email}% vol</div>
+                      <div className="text-[9px] uppercase tracking-wider text-slate-400">{t('kpi.email')}</div>
+                      <div className="text-[10px] text-slate-500 mt-0.5">{s.pDist.email}{t('kpi.volPct')}</div>
                     </div>
                   )}
                 </div>
               </div>
             </div>
 
-            {/* ── Evolução do Volume por Canal ─────────────────── */}
+            {/* ── Volume Trend ─────────────────── */}
             <div id="chart-volume" className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
               <div className="flex items-start justify-between mb-4">
                 <h3 className="text-lg font-black text-slate-800 flex items-center gap-2">
-                  Evolução do Volume <span className="text-xs font-normal text-slate-400 bg-slate-100 px-2 py-0.5 rounded">Mês a Mês</span>
+                  {t('charts.volumeTitle')} <span className="text-xs font-normal text-slate-400 bg-slate-100 px-2 py-0.5 rounded">{t('charts.volumeBadge')}</span>
                 </h3>
                 <div className="flex items-center gap-3 text-[11px] font-bold text-slate-600">
-                  <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-sm inline-block" style={{background:CHANNEL_COLORS.telefone}}/>Telefone</span>
-                  <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-sm inline-block" style={{background:CHANNEL_COLORS.chat}}/>Chat</span>
-                  <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-sm inline-block" style={{background:CHANNEL_COLORS.email}}/>E-mail</span>
+                  <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-sm inline-block" style={{background:CHANNEL_COLORS.telefone}}/>{t('charts.phone')}</span>
+                  <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-sm inline-block" style={{background:CHANNEL_COLORS.chat}}/>{t('charts.chat')}</span>
+                  <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-sm inline-block" style={{background:CHANNEL_COLORS.email}}/>{t('charts.email')}</span>
                 </div>
               </div>
               <div style={{height:300}}>
@@ -780,23 +760,21 @@ Seja direto e executivo. Não use saudações, não nomeie empresa ou pessoa —
                     <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{fontSize:12,fill:'#64748b'}}/>
                     <YAxis axisLine={false} tickLine={false} tick={{fontSize:12,fill:'#64748b'}}/>
                     <RechartsTooltip content={(props:any)=><CustomTooltip {...props}/>} cursor={{stroke:'#cbd5e1',strokeWidth:1,strokeDasharray:'4 4'}}/>
-                    <Area stackId="1" type="monotone" dataKey="telefone" name="Telefone" stroke={CHANNEL_COLORS.telefone} strokeWidth={2} fillOpacity={1} fill="url(#gTel)"/>
-                    <Area stackId="1" type="monotone" dataKey="chat"     name="Chat"     stroke={CHANNEL_COLORS.chat}     strokeWidth={2} fillOpacity={1} fill="url(#gChat)"/>
-                    <Area stackId="1" type="monotone" dataKey="email"    name="E-mail"   stroke={CHANNEL_COLORS.email}    strokeWidth={2} fillOpacity={1} fill="url(#gMail)"/>
+                    <Area stackId="1" type="monotone" dataKey="telefone" name={t('charts.phone')} stroke={CHANNEL_COLORS.telefone} strokeWidth={2} fillOpacity={1} fill="url(#gTel)"/>
+                    <Area stackId="1" type="monotone" dataKey="chat"     name={t('charts.chat')}  stroke={CHANNEL_COLORS.chat}     strokeWidth={2} fillOpacity={1} fill="url(#gChat)"/>
+                    <Area stackId="1" type="monotone" dataKey="email"    name={t('charts.email')} stroke={CHANNEL_COLORS.email}    strokeWidth={2} fillOpacity={1} fill="url(#gMail)"/>
                   </AreaChart>
                 </ResponsiveContainer>
               </div>
             </div>
 
-            {/* ── Analistas por Hora ─────────────────────────────── */}
+            {/* ── Agents per Hour ─────────────────────────────── */}
             {s.hourlyStaffing.length > 0 && (
               <div id="chart-hourly" className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
                 <div className="mb-4">
-                  <h3 className="text-lg font-black text-slate-800">Analistas Necessários por Hora</h3>
+                  <h3 className="text-lg font-black text-slate-800">{t('charts.hourlyTitle')}</h3>
                   <p className="text-xs text-slate-500 mt-1">
-                    Demanda horária por canal — baseada no padrão do último mês.
-                    Jornada configurada: <strong>{config.shiftHours}h</strong>.
-                    Use este gráfico para planejar entradas escalonadas e cobrir o pico sem sobrecarga.
+                    {t('charts.hourlyDesc')} {t('charts.hourlyShift')} <strong>{config.shiftHours}h</strong>. {t('charts.hourlyUse')}
                   </p>
                 </div>
                 <div style={{height:340}}>
@@ -811,7 +789,7 @@ Seja direto e executivo. Não use saudações, não nomeie empresa ou pessoa —
                         const total = payload.reduce((sum:number,p:any)=>sum+(p.value||0),0);
                         return (
                           <div className="bg-white p-4 rounded-2xl shadow-xl border border-slate-100">
-                            <p className="font-bold text-slate-800 mb-2">{label} — {total} analistas</p>
+                            <p className="font-bold text-slate-800 mb-2">{label} — {t('charts.hourlyTooltip', { n: total })}</p>
                             {payload.map((p:any,i:number) => p.value>0 && (
                               <p key={i} className="text-sm font-semibold" style={{color:p.fill}}>{p.name}: {p.value}</p>
                             ))}
@@ -820,27 +798,27 @@ Seja direto e executivo. Não use saudações, não nomeie empresa ou pessoa —
                       }}/>
                       <Legend wrapperStyle={{fontSize:12,fontWeight:700}}/>
                       {config.phoneEnabled && Number(config.phoneAHT)>0 && (
-                        <Bar dataKey="telefone" name="Telefone" stackId="a" fill={CHANNEL_COLORS.telefone}/>
+                        <Bar dataKey="telefone" name={t('charts.phone')} stackId="a" fill={CHANNEL_COLORS.telefone}/>
                       )}
                       {config.chatEnabled && Number(config.chatAHT)>0 && (
-                        <Bar dataKey="chat" name="Chat" stackId="a" fill={CHANNEL_COLORS.chat}/>
+                        <Bar dataKey="chat" name={t('charts.chat')} stackId="a" fill={CHANNEL_COLORS.chat}/>
                       )}
                       {config.emailEnabled && Number(config.emailAHT)>0 && (
-                        <Bar dataKey="email" name="E-mail" stackId="a" fill={CHANNEL_COLORS.email} radius={[4,4,0,0]}/>
+                        <Bar dataKey="email" name={t('charts.email')} stackId="a" fill={CHANNEL_COLORS.email} radius={[4,4,0,0]}/>
                       )}
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
                 <p className="text-[10px] text-slate-400 mt-2 text-center">
-                  💡 Com turnos de {config.shiftHours}h, planeje as entradas para que o pico esteja sempre coberto. Analistas que entram antes do pico cobrem a rampa de crescimento; os que entram no pico garantem cobertura máxima.
+                  {t('charts.hourlyTip', { h: config.shiftHours })}
                 </p>
               </div>
             )}
 
-            {/* ── Taxa de Recontato ─────────────────────────────── */}
+            {/* ── Recontact Rate ─────────────────────────────── */}
             <div id="chart-fcr" className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
               <h3 className="text-lg font-black text-slate-800 mb-4 flex items-center gap-2">
-                Taxa de Recontato (FCR) <span className="text-xs font-normal text-slate-400 bg-slate-100 px-2 py-0.5 rounded">% Mensal</span>
+                {t('charts.fcrTitle')} <span className="text-xs font-normal text-slate-400 bg-slate-100 px-2 py-0.5 rounded">{t('charts.fcrBadge')}</span>
               </h3>
               <div style={{height:280}}>
                 <ResponsiveContainer width="100%" height={280}>
@@ -849,24 +827,26 @@ Seja direto e executivo. Não use saudações, não nomeie empresa ou pessoa —
                     <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{fontSize:12,fill:'#64748b'}}/>
                     <YAxis axisLine={false} tickLine={false} tick={{fontSize:12,fill:'#64748b'}} tickFormatter={(v:any)=>`${v}%`}/>
                     <RechartsTooltip content={(props:any)=><CustomTooltip {...props}/>} cursor={{stroke:'#cbd5e1',strokeWidth:1,strokeDasharray:'4 4'}}/>
-                    <Line type="monotone" dataKey="rate" name="Recontato (%)" stroke="#334155" strokeWidth={3} dot={{r:4,fill:'#334155',strokeWidth:2,stroke:'#fff'}}/>
+                    <Line type="monotone" dataKey="rate" name={t('charts.fcrLine')} stroke="#334155" strokeWidth={3} dot={{r:4,fill:'#334155',strokeWidth:2,stroke:'#fff'}}/>
                   </LineChart>
                 </ResponsiveContainer>
               </div>
             </div>
 
-            {/* ── Distribuição de Demanda ───────────────────────── */}
+            {/* ── Demand Distribution ───────────────────────── */}
             <div id="chart-pie" className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
               <div className="flex justify-between items-start mb-2">
                 <div>
-                  <h3 className="text-lg font-black text-slate-800 leading-tight">Distribuição de Demanda</h3>
+                  <h3 className="text-lg font-black text-slate-800 leading-tight">{t('charts.pieTitle')}</h3>
                   <p className="text-xs text-slate-500 mt-1">
-                    {selectedSubject ? `Motivos de: ${selectedSubject}` : 'Visão Macro: Assuntos. Clique na fatia para aprofundar.'}
+                    {selectedSubject
+                      ? t('charts.pieMotives', { subject: selectedSubject })
+                      : t('charts.pieMacro')}
                   </p>
                 </div>
                 {selectedSubject && (
                   <button onClick={()=>setSelectedSubject(null)} className="text-xs font-bold text-[#4208af] bg-[#f5f0ff] px-4 py-2 rounded-full flex items-center gap-2 hover:bg-[#ede0ff] transition-colors">
-                    <ArrowLeft size={14}/> Voltar Macro
+                    <ArrowLeft size={14}/> {t('charts.pieBack')}
                   </button>
                 )}
               </div>
@@ -886,10 +866,10 @@ Seja direto e executivo. Não use saudações, não nomeie empresa ou pessoa —
               </div>
             </div>
 
-            {/* ── Mapa de Calor ─────────────────────────────────── */}
+            {/* ── Heat Map ─────────────────────────────────── */}
             <div id="chart-heatmap" className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
-              <h3 className="text-lg font-black text-slate-800 mb-1">Mapa de Calor (Concentração de Volume)</h3>
-              <p className="text-xs text-slate-500 mb-4">Dias da Semana vs. Horas do Dia. Identifique picos térmicos para elaboração de escalas.</p>
+              <h3 className="text-lg font-black text-slate-800 mb-1">{t('charts.heatmapTitle')}</h3>
+              <p className="text-xs text-slate-500 mb-4">{t('charts.heatmapDesc')}</p>
               <div className="overflow-auto custom-scrollbar" style={{maxHeight:340}}>
                 <div style={{minWidth:640}}>
                   <div className="flex ml-12 mb-2">
@@ -906,7 +886,7 @@ Seja direto e executivo. Não use saudações, não nomeie empresa ou pessoa —
                             <div key={hIdx} className="flex-1 rounded-sm relative group cursor-crosshair transition-all hover:ring-2 hover:ring-slate-900 hover:z-10 min-w-[24px]"
                               style={{backgroundColor:getHeatmapColor(val,s.maxHeatmapVal)}}>
                               <div className="absolute opacity-0 group-hover:opacity-100 bottom-full left-1/2 -translate-x-1/2 mb-2 bg-slate-900 text-white text-[10px] font-bold py-1 px-2 rounded whitespace-nowrap pointer-events-none z-50">
-                                {day}, {hIdx}h: {val} contatos
+                                {t('charts.heatmapTooltip', { day, h: hIdx, n: val })}
                               </div>
                             </div>
                           ))}
@@ -915,14 +895,14 @@ Seja direto e executivo. Não use saudações, não nomeie empresa ou pessoa —
                     ))}
                   </div>
                   <div className="mt-4 flex items-center justify-end gap-2 text-[10px] font-bold text-slate-400">
-                    Zero <div className="w-4 h-4 rounded-sm bg-[#f1f5f9]"/> <span className="mx-2">|</span> Frio
-                    <div className="w-32 h-3 rounded-full" style={{background:'linear-gradient(to right,#3b82f6,#22c55e,#eab308,#ef4444)'}}/> Quente
+                    {t('charts.heatmapZero')} <div className="w-4 h-4 rounded-sm bg-[#f1f5f9]"/> <span className="mx-2">|</span> {t('charts.heatmapCold')}
+                    <div className="w-32 h-3 rounded-full" style={{background:'linear-gradient(to right,#3b82f6,#22c55e,#eab308,#ef4444)'}}/> {t('charts.heatmapHot')}
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* ── Notas sobre o Cálculo de Escala ──────────────── */}
+            {/* ── Staffing Calculation Notes ──────────────── */}
             {(() => {
               const opDays = config.operationDays.length;
               const shift  = Number(config.shiftHours);
@@ -931,41 +911,29 @@ Seja direto e executivo. Não use saudações, não nomeie empresa ou pessoa —
               return (
                 <div className="bg-[#f5f0ff] border border-[#ede0ff] rounded-3xl p-6 text-slate-700 text-sm space-y-3">
                   <h4 className="font-black text-[#4208af] uppercase tracking-widest text-xs flex items-center gap-2">
-                    📋 Notas sobre o Cálculo de Escala por Hora
+                    {t('disclaimer.title')}
                   </h4>
                   <ul className="space-y-2 text-[13px] leading-relaxed">
                     <li>
-                      <strong>Escala 5×2:</strong> O headcount ideal considera que cada analista trabalha
-                      <strong> {shift}h/dia, {weeklyH}h semanais</strong>, descansando 2 dias por semana
-                      (escala 5×2). Nenhum analista trabalha 7 dias corridos — a CLT brasileira limita
-                      a jornada máxima a 44h semanais, entre outras regras de folga.
+                      <strong>{t('disclaimer.scale52Label')}</strong> {t('disclaimer.scale52Text', { shift, weekly: weeklyH })}
                     </li>
                     {needsCoverage ? null : (
                       <li>
-                        <strong>Fator de cobertura:</strong> Sua operação funciona <strong>{opDays} dias/semana</strong>.
-                        Como isso é igual ou inferior a 5 dias, todos os analistas conseguem cobrir todos
-                        os dias de operação dentro da sua própria jornada semanal — nenhum acréscimo de
-                        headcount foi necessário por conta de folgas.
+                        <strong>{t('disclaimer.coverageLabel')}</strong> {t('disclaimer.coverageText', { opDays })}
                       </li>
                     )}
                     <li>
-                      <strong>Gráfico de analistas por hora:</strong> O gráfico acima mostra a demanda
-                      horária estimada por canal. Use-o para planejar entradas escalonadas: analistas
-                      com jornadas de {shift}h que entram em horários diferentes cobrem o pico com
-                      sobreposição controlada, sem superdimensionar o time em horários de baixo volume.
+                      <strong>{t('disclaimer.chartLabel')}</strong> {t('disclaimer.chartText', { shift })}
                     </li>
                     <li className="text-[#534794] font-medium">
-                      ⚠ Este cálculo é uma estimativa baseada nos dados históricos e nos parâmetros
-                      informados. O gestor de CX deve validar estes números com a realidade operacional
-                      do time, considerando absenteísmo, turnover, sazonalidades e particularidades de
-                      cada contrato de trabalho.
+                      {t('disclaimer.warning')}
                     </li>
                   </ul>
                 </div>
               );
             })()}
 
-            {/* ── Parecer Estratégico AI ────────────────────────── */}
+            {/* ── AI Strategic Report ────────────────────────── */}
             <div id="ai-report-section" className="bg-slate-900 rounded-[2.5rem] p-8 md:p-12 text-white shadow-xl mt-4 relative overflow-hidden">
               <div className="absolute -right-20 -top-20 opacity-10 pointer-events-none rotate-12 scale-150"><Sparkles size={400}/></div>
               <div className="relative z-10">
@@ -974,14 +942,14 @@ Seja direto e executivo. Não use saudações, não nomeie empresa ou pessoa —
                     <img src="/Logo Positiva.svg" alt="Sonata CX" className="w-full h-full object-contain rounded-xl"/>
                   </div>
                   <div>
-                    <h3 className="text-3xl font-black tracking-tight text-white">Parecer Estratégico WFM</h3>
-                    <p className="text-[#534794] text-sm font-bold uppercase tracking-widest mt-1">Sonata.cx • Powered by AI</p>
+                    <h3 className="text-3xl font-black tracking-tight text-white">{t('aiSection.title')}</h3>
+                    <p className="text-[#534794] text-sm font-bold uppercase tracking-widest mt-1">{t('aiSection.subtitle')}</p>
                   </div>
                 </div>
                 {isAiLoading ? (
                   <div className="py-20 flex flex-col items-center justify-center text-[#9b7fe8]">
                     <div className="w-12 h-12 border-4 border-[#534794]/30 border-t-[#534794] rounded-full animate-spin mb-4"/>
-                    <p className="text-sm font-bold tracking-widest uppercase animate-pulse">Analisando dados e criando o parecer...</p>
+                    <p className="text-sm font-bold tracking-widest uppercase animate-pulse">{t('aiSection.loading')}</p>
                   </div>
                 ) : aiReport ? (
                   <div className="prose prose-invert prose-slate max-w-none text-slate-300">
@@ -999,11 +967,11 @@ Seja direto e executivo. Não use saudações, não nomeie empresa ou pessoa —
                     <div className="mt-12 pt-8 border-t border-white/10 flex justify-between items-center">
                       {isAiError ? (
                         <button className="bg-[#4208af] hover:bg-[#5a10d4] text-white px-6 py-3 rounded-full text-sm font-bold transition-colors flex items-center gap-2" onClick={generateReportAndAI}>
-                          ↻ Tentar Novamente
+                          {t('aiSection.retry')}
                         </button>
                       ) : (
                         <button className="bg-white/10 hover:bg-white/20 text-white px-6 py-3 rounded-full text-sm font-bold transition-colors flex items-center gap-2" onClick={()=>window.print()}>
-                          <Download size={16}/> Exportar Relatório (PDF)
+                          <Download size={16}/> {t('aiSection.export')}
                         </button>
                       )}
                     </div>
@@ -1024,15 +992,9 @@ Seja direto e executivo. Não use saudações, não nomeie empresa ou pessoa —
         @media print{
           aside, button { display: none !important; }
           main { padding: 0; width: 100%; max-width: 100%; background: white; }
-
-          /* Heatmap: remove scroll e mostra tudo */
           #chart-heatmap .custom-scrollbar { overflow: visible !important; max-height: none !important; }
           #chart-heatmap .custom-scrollbar > div { min-width: auto !important; }
-
-          /* Notas sobre escala */
           .bg-[#f5f0ff] { background-color: #eef2ff !important; }
-
-          /* Parecer AI */
           #ai-report-section {
             background: white !important; color: black !important;
             box-shadow: none !important; margin-top: 0 !important; padding-top: 1rem !important;

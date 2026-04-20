@@ -1,0 +1,136 @@
+{
+  "days": {
+    "short": ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
+    "label": ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"],
+    "full":  ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
+  },
+  "lang": {
+    "switch": "🇧🇷 PT"
+  },
+  "sidebar": {
+    "version": "Capacity Planner v5.0",
+    "market": {
+      "label": "Company Market",
+      "placeholder": "e.g. E-commerce, Fintech..."
+    },
+    "team": {
+      "heading": "Team & Schedule",
+      "current": "Current Team",
+      "shift": "Daily Hours",
+      "shift4": "4h/day",
+      "shift6": "6h/day",
+      "shift8": "8h/day",
+      "break": "Total Break (Min)"
+    },
+    "schedule": {
+      "heading": "Operating Hours",
+      "daysLabel": "Operating Days",
+      "days7": "7-day operation",
+      "daysN": "{{n}} day(s) per week",
+      "start": "Start (hour)",
+      "end": "End (hour)",
+      "startHint": "e.g. 8 = 08:00",
+      "endHint": "e.g. 18 = 18:00"
+    },
+    "channels": {
+      "heading": "Channels & AHT",
+      "hint": "AHT in minutes (decimals allowed, e.g. 0.5). Disabled channel or AHT = 0 → excluded from headcount calculation.",
+      "phone": "Voice / Phone",
+      "chat": "Chat / Messaging",
+      "email": "E-mail / Tickets",
+      "tmaLabel": "AHT (min)",
+      "concLabel": "Concurr.",
+      "tmaZeroWarning": "⚠ AHT = 0: channel excluded from calculation",
+      "disabledNote": "Channel disabled — excluded from calculation"
+    },
+    "reportBtn": {
+      "analyzing": "Analysing...",
+      "generate": "Generate Strategic Report"
+    }
+  },
+  "import": {
+    "emptyFile": "Empty or invalid file.",
+    "noValidRows": "No rows with valid dates found.",
+    "templateBtn": "Download Sample Spreadsheet (Template)"
+  },
+  "upload": {
+    "title": "WFM Staffing Analysis",
+    "description": "Upload your ticket history (CSV) with the columns:",
+    "columns": "data_hora_entrada, client_id, canal, assunto, motivo",
+    "importBtn": "Import CSV File",
+    "security": {
+      "title": "Security Notice (LGPD / GDPR)",
+      "line1": "Do not upload sensitive information or real customer data.",
+      "line2": "We recommend masking the",
+      "line3": "column. Do not use real emails, tax IDs, or names.",
+      "line4": "Raw data is processed locally in the browser. Only consolidated KPIs are sent to the AI (Google Gemini) to generate the report."
+    }
+  },
+  "loaded": {
+    "title": "File Imported Successfully!",
+    "desc1": "The file contains",
+    "desc2": "valid contacts.",
+    "desc3": "Fill in the",
+    "desc4": "Company Market",
+    "desc5": "field in the sidebar and click",
+    "desc6": "Generate Strategic Report"
+  },
+  "kpi": {
+    "hcIdeal": "Ideal Headcount",
+    "dailyVol": "Daily Vol Ref: {{n}} tickets",
+    "workingDays": "{{n}} working days in month",
+    "growth": "Growth (MoM)",
+    "growthSub": "Compound monthly rate",
+    "recontact": "Recontact Rate",
+    "recontactSub": "14-day window per customer",
+    "required": "Required Team",
+    "voice": "Voice",
+    "chat": "Chat",
+    "email": "E-mail",
+    "volPct": "% vol"
+  },
+  "charts": {
+    "volumeTitle": "Volume Trend",
+    "volumeBadge": "Month over Month",
+    "phone": "Phone",
+    "chat": "Chat",
+    "email": "E-mail",
+    "hourlyTitle": "Agents Required per Hour",
+    "hourlyDesc": "Hourly demand by channel — based on last month's pattern.",
+    "hourlyShift": "Configured shift:",
+    "hourlyUse": "Use this chart to plan staggered start times and cover the peak without overstaffing.",
+    "hourlyTooltip": "{{n}} agents",
+    "hourlyTip": "💡 With {{h}}h shifts, plan start times so the peak is always covered. Agents starting before the peak cover the ramp-up; those starting at the peak ensure maximum coverage.",
+    "fcrTitle": "Recontact Rate (FCR)",
+    "fcrBadge": "Monthly %",
+    "fcrLine": "Recontact (%)",
+    "pieTitle": "Demand Distribution",
+    "pieMacro": "Macro view: Topics. Click a slice to drill down.",
+    "pieMotives": "Reasons for: {{subject}}",
+    "pieBack": "Back to Macro",
+    "heatmapTitle": "Heat Map (Volume Concentration)",
+    "heatmapDesc": "Day of Week vs. Hour of Day. Identify thermal peaks for shift planning.",
+    "heatmapTooltip": "{{day}}, {{h}}:00 — {{n}} contacts",
+    "heatmapZero": "Zero",
+    "heatmapCold": "Low",
+    "heatmapHot": "High"
+  },
+  "disclaimer": {
+    "title": "📋 Notes on the Hourly Staffing Calculation",
+    "scale52Label": "5×2 Schedule:",
+    "scale52Text": "The ideal headcount assumes each analyst works {{shift}}h/day, {{weekly}}h/week, with 2 days off per week (5×2 schedule). No analyst works 7 consecutive days.",
+    "coverageLabel": "Coverage factor:",
+    "coverageText": "Your operation runs {{opDays}} days/week. Since that is equal to or fewer than 5 days, all analysts can cover every operating day within their own weekly schedule — no additional headcount is needed to account for days off.",
+    "chartLabel": "Agents-per-hour chart:",
+    "chartText": "The chart above shows estimated hourly demand by channel. Use it to plan staggered shifts: analysts with {{shift}}h shifts starting at different times cover the peak with controlled overlap, without overstaffing during low-volume hours.",
+    "warning": "⚠ This calculation is an estimate based on historical data and the parameters you entered. The CX manager should validate these numbers against the team's operational reality, accounting for absenteeism, turnover, seasonality, and individual contract terms."
+  },
+  "aiSection": {
+    "title": "Strategic WFM Report",
+    "subtitle": "Sonata.cx • Powered by AI",
+    "loading": "Analysing data and generating the report...",
+    "retry": "↻ Try Again",
+    "export": "Export Report (PDF)"
+  },
+  "aiPrompt": "[SYSTEM INSTRUCTION]: You are a senior consultant at Sonata.cx. Use Markdown formatting. Respond entirely in English.\n\nAct as a Senior CX Consultant specialising in Workforce Management (WFM).\n\nOPERATION DATA:\n- Market: {{market}}\n- Operation: {{opDaysLabel}} | {{startH}}:00–{{endH}}:00 | {{shift}}h/day shifts | {{weekly}} per week | 5×2 schedule\n- Current Headcount: {{teamSize}} | Ideal Headcount: {{hcIdeal}} (Voice: {{hcPhone}} | Chat: {{hcChat}} | E-mail: {{hcEmail}})\n- Channels & AHT: {{activeChannels}}\n- Volume by channel: Phone {{pPhone}}% | Chat {{pChat}}% | E-mail {{pEmail}}%\n- Average Daily Volume: {{avgVol}} tickets/day ({{workingDays}} working days/month)\n- Monthly Growth: {{growth}}% | Recontact Rate (14d): {{fcr}}%\n- Peak hour: {{peakHour}} ({{peakTotal}} simultaneous agents)\n\nREPORT RULES:\n\nBe direct and executive. No greetings, no company or person names — the report will be displayed on the client's screen. Do not repeat information across sections. Every point must add something new.\n\n1. Open by analysing the staffing scenario: compare Current vs Ideal HC, show the channel distribution, and explain in one sentence how AHT affects HC (without detailing the calculation — the disclaimer already covers that).\n2. Analyse the active channels. Give each channel one sentence on its key trait: e-mail (batch efficiency vs. complexity depending on the process), chat (concurrency vs. customer response time), phone (high unit cost, one agent per interaction). Close by noting that the channel mix is a strategic decision.\n3. Apply ONLY ONE of the scenarios below based on the numbers:\n   - IF Ideal HC > (Current × 1.15): recommend automation and self-service channels (chatbot, interactive FAQ, public knowledge base) before hiring. Technology: costly and slow to deploy, but highly scalable. Process improvements: fast and reasonably scalable. Hiring: slow and hard to scale.\n   - IF Current HC > Ideal HC AND Growth > 10%: question whether there is a justification for the surplus (expected rapid growth?), estimate when the volume will outgrow the team, and stress that this is the ideal moment to focus on CSAT, NPS, and quality.\n   - IF Current HC is much higher than Ideal (>15% above): flag as a point of attention and suggest reviewing analyst role allocation.\n   - IF balanced AND Growth < 10%: focus on quality, process improvement, and AHT reduction.\n4. Comment on the peak hour ({{peakHour}}) and how the agents-per-hour chart in the dashboard helps plan staggered shifts.\n5. Close with a brief mention of Sonata.cx as a strategic CX and WFM partner."
+}

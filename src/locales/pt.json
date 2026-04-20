@@ -1,0 +1,136 @@
+{
+  "days": {
+    "short": ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"],
+    "label": ["D", "S", "T", "Q", "Q", "S", "S"],
+    "full":  ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"]
+  },
+  "lang": {
+    "switch": "🇺🇸 EN"
+  },
+  "sidebar": {
+    "version": "Capacity Planner v5.0",
+    "market": {
+      "label": "Mercado da Empresa",
+      "placeholder": "Ex: E-commerce, Fintech..."
+    },
+    "team": {
+      "heading": "Equipe e Jornada",
+      "current": "Equipe Atual",
+      "shift": "Carga Horária",
+      "shift4": "4h diárias",
+      "shift6": "6h diárias",
+      "shift8": "8h diárias",
+      "break": "Pausa Total (Min)"
+    },
+    "schedule": {
+      "heading": "Horário de Operação",
+      "daysLabel": "Dias de Funcionamento",
+      "days7": "Operação 7 dias por semana",
+      "daysN": "{{n}} dia(s) por semana",
+      "start": "Início (hora)",
+      "end": "Fim (hora)",
+      "startHint": "ex: 8 = 08h00",
+      "endHint": "ex: 18 = 18h00"
+    },
+    "channels": {
+      "heading": "Canais e TMA",
+      "hint": "TMA em minutos (frações permitidas, ex: 0.5). Canal desativado ou TMA = 0 → ignorado no cálculo de headcount.",
+      "phone": "Voz / Telefone",
+      "chat": "Chat / Messaging",
+      "email": "E-mail / Tickets",
+      "tmaLabel": "TMA (min)",
+      "concLabel": "Simult.",
+      "tmaZeroWarning": "⚠ TMA = 0: canal ignorado no cálculo",
+      "disabledNote": "Canal desativado — excluído do cálculo"
+    },
+    "reportBtn": {
+      "analyzing": "A Analisar...",
+      "generate": "Gerar Relatório Estratégico"
+    }
+  },
+  "import": {
+    "emptyFile": "Arquivo vazio ou inválido.",
+    "noValidRows": "Nenhuma linha com data válida encontrada.",
+    "templateBtn": "Baixar Planilha de Exemplo (Template)"
+  },
+  "upload": {
+    "title": "Análise de Escala WFM",
+    "description": "Faça o upload do histórico de tickets (CSV) com as colunas:",
+    "columns": "data_hora_entrada, client_id, canal, assunto, motivo",
+    "importBtn": "Importar Arquivo CSV",
+    "security": {
+      "title": "Aviso de Segurança (LGPD/RGPD)",
+      "line1": "Não faça upload de informações sensíveis ou dados reais de clientes.",
+      "line2": "Recomendamos mascarar a coluna",
+      "line3": ". Não utilize E-mails, CPFs ou Nomes reais.",
+      "line4": "Os dados brutos são processados localmente no navegador. Apenas KPIs consolidados são enviados à IA (Google Gemini) para geração do parecer."
+    }
+  },
+  "loaded": {
+    "title": "Arquivo Importado com Sucesso!",
+    "desc1": "O arquivo possui",
+    "desc2": "contatos válidos.",
+    "desc3": "Preencha o campo",
+    "desc4": "Mercado da Empresa",
+    "desc5": "na barra lateral e clique em",
+    "desc6": "Gerar Relatório Estratégico"
+  },
+  "kpi": {
+    "hcIdeal": "Headcount Ideal",
+    "dailyVol": "Vol Diário Ref: {{n}} tickets",
+    "workingDays": "{{n}} dias úteis no mês",
+    "growth": "Crescimento (MoM)",
+    "growthSub": "Taxa composta mensal",
+    "recontact": "Taxa de Recontato",
+    "recontactSub": "Janela de 14 dias p/ cliente",
+    "required": "Equipe Necessária",
+    "voice": "Voz",
+    "chat": "Chat",
+    "email": "E-mail",
+    "volPct": "% vol"
+  },
+  "charts": {
+    "volumeTitle": "Evolução do Volume",
+    "volumeBadge": "Mês a Mês",
+    "phone": "Telefone",
+    "chat": "Chat",
+    "email": "E-mail",
+    "hourlyTitle": "Analistas Necessários por Hora",
+    "hourlyDesc": "Demanda horária por canal — baseada no padrão do último mês.",
+    "hourlyShift": "Jornada configurada:",
+    "hourlyUse": "Use este gráfico para planejar entradas escalonadas e cobrir o pico sem sobrecarga.",
+    "hourlyTooltip": "{{n}} analistas",
+    "hourlyTip": "💡 Com turnos de {{h}}h, planeje as entradas para que o pico esteja sempre coberto. Analistas que entram antes do pico cobrem a rampa de crescimento; os que entram no pico garantem cobertura máxima.",
+    "fcrTitle": "Taxa de Recontato (FCR)",
+    "fcrBadge": "% Mensal",
+    "fcrLine": "Recontato (%)",
+    "pieTitle": "Distribuição de Demanda",
+    "pieMacro": "Visão Macro: Assuntos. Clique na fatia para aprofundar.",
+    "pieMotives": "Motivos de: {{subject}}",
+    "pieBack": "Voltar Macro",
+    "heatmapTitle": "Mapa de Calor (Concentração de Volume)",
+    "heatmapDesc": "Dias da Semana vs. Horas do Dia. Identifique picos térmicos para elaboração de escalas.",
+    "heatmapTooltip": "{{day}}, {{h}}h: {{n}} contatos",
+    "heatmapZero": "Zero",
+    "heatmapCold": "Frio",
+    "heatmapHot": "Quente"
+  },
+  "disclaimer": {
+    "title": "📋 Notas sobre o Cálculo de Escala por Hora",
+    "scale52Label": "Escala 5×2:",
+    "scale52Text": "O headcount ideal considera que cada analista trabalha {{shift}}h/dia, {{weekly}}h semanais, descansando 2 dias por semana (escala 5×2). Nenhum analista trabalha 7 dias corridos — a CLT brasileira limita a jornada máxima a 44h semanais, entre outras regras de folga.",
+    "coverageLabel": "Fator de cobertura:",
+    "coverageText": "Sua operação funciona {{opDays}} dias/semana. Como isso é igual ou inferior a 5 dias, todos os analistas conseguem cobrir todos os dias de operação dentro da sua própria jornada semanal — nenhum acréscimo de headcount foi necessário por conta de folgas.",
+    "chartLabel": "Gráfico de analistas por hora:",
+    "chartText": "O gráfico acima mostra a demanda horária estimada por canal. Use-o para planejar entradas escalonadas: analistas com jornadas de {{shift}}h que entram em horários diferentes cobrem o pico com sobreposição controlada, sem superdimensionar o time em horários de baixo volume.",
+    "warning": "⚠ Este cálculo é uma estimativa baseada nos dados históricos e nos parâmetros informados. O gestor de CX deve validar estes números com a realidade operacional do time, considerando absenteísmo, turnover, sazonalidades e particularidades de cada contrato de trabalho."
+  },
+  "aiSection": {
+    "title": "Parecer Estratégico WFM",
+    "subtitle": "Sonata.cx • Powered by AI",
+    "loading": "Analisando dados e criando o parecer...",
+    "retry": "↻ Tentar Novamente",
+    "export": "Exportar Relatório (PDF)"
+  },
+  "aiPrompt": "[INSTRUÇÃO DE SISTEMA]: Você é um consultor sênior da Sonata.cx. Use formatação Markdown.\n\nAtue como Consultor de CX Sênior com foco em Workforce Management (WFM).\n\nDADOS DA OPERAÇÃO:\n- Mercado: {{market}}\n- Operação: {{opDaysLabel}} | {{startH}}h–{{endH}}h | Jornada {{shift}}h/dia | {{weekly}} semanais | Escala 5×2\n- Headcount Atual: {{teamSize}} | Headcount Ideal: {{hcIdeal}} (Voz: {{hcPhone}} | Chat: {{hcChat}} | E-mail: {{hcEmail}})\n- Canais e TMA: {{activeChannels}}\n- Volume por canal: Telefone {{pPhone}}% | Chat {{pChat}}% | E-mail {{pEmail}}%\n- Volume Médio Diário: {{avgVol}} tickets/dia ({{workingDays}} dias úteis/mês)\n- Crescimento Mensal: {{growth}}% | Taxa de Recontato (14d): {{fcr}}%\n- Hora de pico: {{peakHour}} ({{peakTotal}} analistas simultâneos)\n\nREGRAS DO RELATÓRIO:\n\nSeja direto e executivo. Não use saudações, não nomeie empresa ou pessoa — o relatório será exibido na tela do cliente. Não repita informações entre seções. Cada ponto deve agregar algo novo.\n\n1. Abra analisando o cenário de dimensionamento: compare HC Atual vs Ideal, mostre a distribuição por canal e explique em uma frase como o TMA afeta o HC (sem detalhar o cálculo — o disclaimer já explica).\n2. Analise os canais ativos. Cada canal tem uma frase sobre sua peculiaridade: e-mail (eficiência em lote vs. complexidade dependendo do processo), chat (simultaneidade vs. tempo de resposta do cliente), telefone (custo unitário alto, 1 analista por atendimento). Finalize comentando que o mix de canais é uma decisão estratégica.\n3. Aplique SOMENTE UM dos cenários abaixo, conforme os números:\n   - SE HC Ideal > (Atual × 1.15): recomendar automação e canais de autoatendimento (chatbot, FAQ interativo, base de conhecimento pública) antes de contratar. Tecnologia: cara e demorada, mas altamente escalável. Processos: rápidos e razoavelmente escaláveis. Contratação: lenta e pouco escalável.\n   - SE HC Atual > HC Ideal E Crescimento > 10%: questionar se há justificativa para o excesso (crescimento acelerado previsto?), estimar quando o volume tornará o time insuficiente e reforçar que é o momento ideal para CSAT, NPS e qualidade.\n   - SE HC Atual muito acima do HC Ideal (>15%): apontar como ponto de atenção e sugerir revisão das funções dos analistas.\n   - SE equilibrado E Crescimento < 10%: foco em qualidade, processos e redução de TMA.\n4. Comente a hora de pico ({{peakHour}}) e como o gráfico de analistas por hora do dashboard ajuda a planejar turnos escalonados.\n5. Encerre com uma menção discreta à Sonata.cx como parceira estratégica de CX e WFM."
+}
